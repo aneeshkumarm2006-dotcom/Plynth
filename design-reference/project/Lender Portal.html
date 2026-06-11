@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plynth — Lender Portal</title>
+<link rel="stylesheet" href="assets/plynth.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  @media (max-width: 1040px){
+    .focus-grid{ grid-template-columns:1fr !important; } .focus-grid > div:last-child{ border-left:none !important; border-top:1px solid var(--border); }
+    .lender-dash-grid{ grid-template-columns:1fr !important; } .lender-aside{ order:-1; }
+    .detail-grid{ grid-template-columns:1fr !important; } .match-body{ grid-template-columns:1fr !important; gap:18px !important; }
+    .cb-grid{ grid-template-columns:1fr !important; } .cb-preview{ position:static !important; } .cb-assets{ grid-template-columns:1fr !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="assets/lender-data.js"></script>
+<script type="text/babel" src="assets/shared.jsx"></script>
+<script type="text/babel" src="assets/criteria-builder.jsx"></script>
+<script type="text/babel" src="assets/lender-screens.jsx"></script>
+<script type="text/babel" src="assets/lender-forms.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* Offers screen (offers out) */
+function LenderOffers({ nav, toast }) {
+  const offered = window.LENDER.pipeline.Offered.concat(window.LENDER.pipeline["In Negotiation"]);
+  return (
+    <div className="page page-wide">
+      <div style={{ marginBottom: 28 }}>
+        <h1 className="h1">Offers</h1>
+        <p className="lead" style={{ fontSize: 16, marginTop: 6 }}>Offers you've made, awaiting broker response.</p>
+      </div>
+      <div className="card" style={{ overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr style={{ borderBottom: "1px solid var(--border)" }}>
+            {["Deal", "Location", "Amount", "Your rate", "Match", "Status", ""].map((h, i) => (
+              <th key={i} style={{ textAlign: i >= 2 && i <= 4 ? "right" : "left", padding: "14px 18px", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)" }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {offered.map((d, i) => (
+              <tr key={i} style={{ borderBottom: i < offered.length - 1 ? "1px solid var(--border)" : "none", cursor: "pointer" }} onClick={() => nav("deal", d.no)}
+                onMouseEnter={e => e.currentTarget.style.background = "#FCFAF5"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <td style={{ padding: "16px 18px" }}><span className="deal-no" style={{ fontSize: 14 }}>№ {d.no}</span></td>
+                <td style={{ padding: "16px 18px", fontSize: 14 }}>{d.city}</td>
+                <td className="num" style={{ padding: "16px 18px", textAlign: "right", fontWeight: 600, color: "var(--slate-deep)" }}>{d.amount}</td>
+                <td className="num" style={{ padding: "16px 18px", textAlign: "right", color: "var(--amber-deep)", fontWeight: 600 }}>{(8.75 + i * 0.5).toFixed(2)}%</td>
+                <td style={{ padding: "16px 18px", textAlign: "right" }}><span className="num" style={{ color: "var(--amber-deep)", fontWeight: 600 }}>{d.score}</span></td>
+                <td style={{ padding: "16px 18px" }}><Pill status={i % 2 ? "negotiating" : "offer"} /></td>
+                <td style={{ padding: "16px 18px", textAlign: "right", color: "var(--muted)", fontSize: 18 }}>›</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+const NAV = [
+  { id: "dashboard", label: "Matched Deals" },
+  { id: "pipeline", label: "Pipeline" },
+  { id: "offers", label: "Offers" },
+  { id: "funded", label: "Funded" },
+  { group: "Configuration" },
+  { id: "criteria", label: "Criteria" },
+  { id: "account", label: "Account" },
+];
+
+function App() {
+  const initialHash = (location.hash || "").replace("#", "");
+  const startAuthed = initialHash !== "login" && initialHash !== "signup";
+  const [authed, setAuthed] = useState(startAuthed);
+  const [route, setRoute] = useState(startAuthed ? "dashboard" : (initialHash || "login"));
+  const [param, setParam] = useState(null);
+  const [toast, fireToast] = useToast();
+
+  const nav = (r, p) => { setRoute(r); setParam(p || null); window.scrollTo(0, 0); };
+  const auth = () => { setAuthed(true); nav("dashboard"); };
+
+  if (!authed) {
+    if (route === "signup") return (<React.Fragment><LenderSignup nav={nav} onAuth={auth} /><Toast {...(toast || {})} /></React.Fragment>);
+    return (<React.Fragment><LenderLogin nav={nav} onAuth={auth} /><Toast {...(toast || {})} /></React.Fragment>);
+  }
+
+  const screens = {
+    dashboard: <LenderDashboard nav={nav} toast={fireToast} />,
+    matched: <LenderMatched nav={nav} toast={fireToast} />,
+    deal: <LenderDealDetail nav={nav} toast={fireToast} dealNo={param} />,
+    pipeline: <LenderPipeline nav={nav} />,
+    offers: <LenderOffers nav={nav} toast={fireToast} />,
+    funded: <LenderFunded nav={nav} />,
+    criteria: <LenderCriteria nav={nav} toast={fireToast} />,
+    account: <LenderAccount nav={nav} toast={fireToast} />,
+  };
+  const activeNav = route === "deal" || route === "matched" ? "dashboard" : route;
+
+  return (
+    <div>
+      <div className="topbar">
+        <Logo size={30} onClick={() => nav("dashboard")} />
+        <span className="micro" style={{ color: "var(--muted)", borderLeft: "1px solid var(--border)", paddingLeft: 12, marginLeft: 2, letterSpacing: "0.1em", textTransform: "uppercase" }}>For Lenders</span>
+        <div className="spacer" />
+        <span className="pill pill-matched">{window.LENDER.user.tier}</span>
+        <div style={{ width: 1, height: 24, background: "var(--border)", margin: "0 6px" }} />
+        <ProfileMenu name={window.LENDER.user.name} sub={window.LENDER.user.firm} initials={window.LENDER.user.initials}
+          items={[
+            { label: "Account & billing", onClick: () => nav("account") },
+            { label: "Edit criteria", onClick: () => nav("criteria") },
+            { label: "Sign out", danger: true, onClick: () => { setAuthed(false); nav("login"); } },
+          ]} />
+      </div>
+      <div className="app">
+        <Sidebar items={NAV} active={activeNav} onNavigate={nav}
+          footer={<div className="micro muted-text" style={{ padding: "0 12px" }}>Fortress MIC<br />Professional plan</div>} />
+        <div className="app-main">{screens[route]}</div>
+      </div>
+      <Toast {...(toast || {})} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

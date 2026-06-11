@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plynth — Design System</title>
+<link rel="stylesheet" href="assets/plynth.css">
+<style>
+  .ds-page { max-width: 1080px; margin: 0 auto; padding: 0 32px 120px; }
+  .ds-hero { padding: 96px 0 64px; border-bottom: 1px solid var(--border); }
+  .ds-section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .ds-section:last-child { border-bottom: none; }
+  .ds-grid { display: grid; gap: 16px; }
+  .ds-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .swatch { border-radius: var(--r-card); border: 1px solid var(--border); overflow: hidden; background: #fff; }
+  .swatch .chip-color { height: 76px; }
+  .swatch .meta { padding: 10px 12px; }
+  .swatch .meta .name { font-size: 13px; font-weight: 600; color: var(--slate-deep); }
+  .swatch .meta .hex { font-size: 12px; color: var(--text-2); font-feature-settings:'tnum' 1; }
+  .specimen { padding: 18px 0; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; gap: 24px; }
+  .specimen:last-child { border-bottom: none; }
+  .specimen .anno { font-size: 12px; color: var(--muted); font-family: var(--sans); text-align: right; flex-shrink: 0; }
+  .demo-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-card); padding: 28px; }
+  .label-tag { font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom: 14px; }
+  .twocol { display:grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px){ .twocol{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="ds-page">
+
+  <!-- HERO -->
+  <header class="ds-hero">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:40px;">
+      <svg class="monogram" style="width:36px;height:36px" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="7" fill="#1F2D44"/>
+        <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#FAF6EF" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+        <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+      </svg>
+      <span class="wordmark" style="font-size:24px">Plynth</span>
+    </div>
+    <div class="eyebrow" style="margin-bottom:20px">Design System — v1.0</div>
+    <h1 class="display" style="max-width:14ch">The marketplace for Canadian private lending.</h1>
+    <p class="lead" style="max-width:54ch; margin-top:24px">
+      A calm, deliberate system built for serious work. Editorial typography, restrained
+      colour, tabular figures throughout — closer to a private bank than a SaaS dashboard.
+    </p>
+  </header>
+
+  <!-- BRAND / MONOGRAM -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">01</span><span class="sd-slash">/</span><span class="sd-label">Brand</span>
+      <span class="sd-meta">Monogram &amp; lockup</span>
+    </div>
+    <div class="twocol">
+      <div class="demo-card">
+        <div class="label-tag">Monogram — the plinth motif</div>
+        <div class="ds-row" style="gap:28px; align-items:flex-end">
+          <svg style="width:88px;height:88px" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="7" fill="#1F2D44"/>
+            <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#FAF6EF" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+            <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+          </svg>
+          <svg style="width:56px;height:56px" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="7" fill="#1F2D44"/>
+            <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#FAF6EF" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+            <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+          </svg>
+          <svg style="width:32px;height:32px" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="7" fill="#1F2D44"/>
+            <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#FAF6EF" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+            <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+          </svg>
+        </div>
+        <p class="small muted-text" style="margin-top:22px; max-width:42ch">
+          A column stem standing on an amber plinth — the architectural base a structure
+          rests on. Holds its form down to 24&nbsp;px.
+        </p>
+      </div>
+      <div class="demo-card" style="display:flex; flex-direction:column; gap:24px; justify-content:center">
+        <div class="label-tag" style="margin-bottom:0">Lockup</div>
+        <a class="logo" href="#">
+          <svg class="monogram" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="7" fill="#1F2D44"/>
+            <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#FAF6EF" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+            <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+          </svg>
+          <span class="wordmark">Plynth</span>
+        </a>
+        <div style="background:var(--slate-deep); border-radius:var(--r-card); padding:20px 24px;">
+          <a class="logo" href="#">
+            <svg class="monogram" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="7" fill="#FAF6EF"/>
+              <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#1F2D44" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+              <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+            </svg>
+            <span class="wordmark" style="color:#FAF6EF">Plynth</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLOR -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">02</span><span class="sd-slash">/</span><span class="sd-label">Colour</span>
+      <span class="sd-meta">Exact brand values — no invented variants</span>
+    </div>
+
+    <div class="label-tag">Core</div>
+    <div class="ds-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:40px">
+      <div class="swatch"><div class="chip-color" style="background:#3B547A"></div><div class="meta"><div class="name">Slate Blue</div><div class="hex">#3B547A · primary</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#1F2D44"></div><div class="meta"><div class="name">Slate Deep</div><div class="hex">#1F2D44 · headings</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#FAF6EF; border-bottom:1px solid var(--border)"></div><div class="meta"><div class="name">Off-white</div><div class="hex">#FAF6EF · page</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#FFFFFF; border-bottom:1px solid var(--border)"></div><div class="meta"><div class="name">White</div><div class="hex">#FFFFFF · surface</div></div></div>
+    </div>
+
+    <div class="label-tag">Accent &amp; text</div>
+    <div class="ds-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:40px">
+      <div class="swatch"><div class="chip-color" style="background:#D4A574"></div><div class="meta"><div class="name">Amber</div><div class="hex">#D4A574 · CTA</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#B8895A"></div><div class="meta"><div class="name">Amber Deep</div><div class="hex">#B8895A · hover</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#6B7280"></div><div class="meta"><div class="name">Text Secondary</div><div class="hex">#6B7280</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#94A3B8"></div><div class="meta"><div class="name">Muted</div><div class="hex">#94A3B8</div></div></div>
+    </div>
+
+    <div class="label-tag">Status — low-saturation, never traffic-light</div>
+    <div class="ds-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="swatch"><div class="chip-color" style="background:#7C9885"></div><div class="meta"><div class="name">Sage</div><div class="hex">#7C9885 · positive</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#C97B7B"></div><div class="meta"><div class="name">Dust</div><div class="hex">#C97B7B · negative</div></div></div>
+      <div class="swatch"><div class="chip-color" style="background:#D4B574"></div><div class="meta"><div class="name">Wheat</div><div class="hex">#D4B574 · caution</div></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">03</span><span class="sd-slash">/</span><span class="sd-label">Typography</span>
+      <span class="sd-meta">Source Serif 4 · Inter · tabular figures</span>
+    </div>
+
+    <div class="specimen"><span class="display" style="font-size:64px">Aa</span><span class="anno">Display — Source Serif 4<br>clamp 40–76px · −0.022em</span></div>
+    <div class="specimen"><span class="h1">$847M placed through Plynth</span><span class="anno">H1 · 42px · −0.02em</span></div>
+    <div class="specimen"><span class="h2">Three new deals match your criteria</span><span class="anno">H2 · 32px</span></div>
+    <div class="specimen"><span class="h3">Deal № 0247 — Westbrook Avenue</span><span class="anno">H3 · 24px · numero sign</span></div>
+    <div class="specimen"><span class="lead" style="max-width:60ch">A thoughtful person wrote this, not a marketing team. Curly quotes, em dashes — and en dashes in ranges like 8.5–11%.</span><span class="anno">Lead · 19px · Inter</span></div>
+    <div class="specimen"><span class="body" style="max-width:64ch">Body copy in Inter at 15px with a 1.6 line-height. Reads cleanly at desk distance across long-form deal summaries and definition lists.</span><span class="anno">Body · 15px</span></div>
+    <div class="specimen"><span class="eyebrow">Pipeline · Offers · Funded</span><span class="anno">Eyebrow · 11px · 0.16em</span></div>
+    <div class="specimen">
+      <span class="tnum" style="font-family:var(--serif); font-size:30px; color:var(--slate-deep)">$425,000 &nbsp; 72.0% &nbsp; 8.5–11% &nbsp; 0247</span>
+      <span class="anno">Tabular figures<br>lock vertical rhythm</span>
+    </div>
+  </section>
+
+  <!-- SPACING / RADII -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">04</span><span class="sd-slash">/</span><span class="sd-label">Spacing &amp; Form</span>
+      <span class="sd-meta">8px scale · restrained radii</span>
+    </div>
+    <div class="twocol">
+      <div class="demo-card">
+        <div class="label-tag">Spacing scale</div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <div class="ds-row"><div style="height:12px;width:4px;background:var(--slate)"></div><span class="small muted-text">4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 · 96</span></div>
+          <div class="ds-row" style="align-items:flex-end; gap:6px; margin-top:4px">
+            <div style="width:4px;height:4px;background:var(--slate)"></div>
+            <div style="width:8px;height:8px;background:var(--slate)"></div>
+            <div style="width:12px;height:12px;background:var(--slate)"></div>
+            <div style="width:16px;height:16px;background:var(--slate)"></div>
+            <div style="width:24px;height:24px;background:var(--slate)"></div>
+            <div style="width:32px;height:32px;background:var(--slate)"></div>
+            <div style="width:48px;height:48px;background:var(--slate)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="label-tag">Corner radius</div>
+        <div class="ds-row" style="gap:20px">
+          <div style="text-align:center"><div style="width:64px;height:48px;border:1px solid var(--slate);border-radius:8px"></div><div class="micro muted-text" style="margin-top:8px">8px card</div></div>
+          <div style="text-align:center"><div style="width:64px;height:48px;border:1px solid var(--slate);border-radius:6px"></div><div class="micro muted-text" style="margin-top:8px">6px button</div></div>
+          <div style="text-align:center"><div style="width:64px;height:48px;border:1px solid var(--slate);border-radius:4px"></div><div class="micro muted-text" style="margin-top:8px">4px input</div></div>
+        </div>
+        <p class="small muted-text" style="margin-top:20px">Never pill-shaped. Borders 1px in #E5E0D6, never heavier.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUTTONS -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">05</span><span class="sd-slash">/</span><span class="sd-label">Buttons</span>
+    </div>
+    <div class="demo-card">
+      <div class="ds-row" style="gap:14px; margin-bottom:18px">
+        <button class="btn btn-primary">Submit deal</button>
+        <button class="btn btn-secondary">Counter offer</button>
+        <button class="btn btn-tertiary">View details</button>
+        <button class="btn btn-ghost">Save draft</button>
+        <button class="btn btn-danger">Decline</button>
+      </div>
+      <div class="ds-row" style="gap:14px">
+        <button class="btn btn-primary btn-lg">Large</button>
+        <button class="btn btn-primary">Default</button>
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS PILLS -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">06</span><span class="sd-slash">/</span><span class="sd-label">Status Pills</span>
+      <span class="sd-meta">Eight states</span>
+    </div>
+    <div class="demo-card">
+      <div class="ds-row" style="gap:10px">
+        <span class="pill pill-draft">Draft</span>
+        <span class="pill pill-active">Active</span>
+        <span class="pill pill-matched">Matched</span>
+        <span class="pill pill-offer">Offer In</span>
+        <span class="pill pill-negotiating">Negotiating</span>
+        <span class="pill pill-funded">Funded</span>
+        <span class="pill pill-declined">Declined</span>
+        <span class="pill pill-expired">Expired</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAT BLOCKS + DEFLIST -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">07</span><span class="sd-slash">/</span><span class="sd-label">Data Display</span>
+      <span class="sd-meta">Stat blocks · definition list · match score</span>
+    </div>
+    <div class="stat-strip" style="margin-bottom:24px">
+      <div class="stat"><div class="stat-value">12</div><div class="stat-label">Active Deals</div></div>
+      <div class="stat"><div class="stat-value">7</div><div class="stat-label">Offers In</div><div class="stat-delta up">+3 this week</div></div>
+      <div class="stat"><div class="stat-value">$4.2<span class="unit">M</span></div><div class="stat-label">Funded This Month</div></div>
+      <div class="stat"><div class="stat-value">$38.6<span class="unit">M</span></div><div class="stat-label">Volume YTD</div></div>
+    </div>
+    <div class="twocol">
+      <div class="demo-card">
+        <div class="label-tag">Definition list</div>
+        <dl class="deflist">
+          <div class="row"><dt>Loan amount</dt><dd>$425,000 CAD</dd></div>
+          <div class="row"><dt>Position</dt><dd>First mortgage</dd></div>
+          <div class="row"><dt>LTV</dt><dd>72.0%</dd></div>
+          <div class="row"><dt>Term</dt><dd>12 months</dd></div>
+          <div class="row"><dt>Rate expectation</dt><dd>8.5–11%</dd></div>
+        </dl>
+      </div>
+      <div class="demo-card" style="display:flex; flex-direction:column; gap:24px; justify-content:center">
+        <div>
+          <div class="label-tag">Match score bar</div>
+          <div class="matchbar"><div class="track"><div class="fill" style="width:94%"></div></div><span class="val">94</span></div>
+        </div>
+        <div>
+          <div class="label-tag">Deal number</div>
+          <span class="deal-no" style="font-size:18px">Deal № 0247</span>
+        </div>
+        <div>
+          <div class="label-tag">Currency</div>
+          <span class="tnum" style="font-family:var(--serif); font-size:26px; color:var(--slate-deep)">$1,250,000 <span style="font-size:13px;color:var(--text-2)">CAD</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INPUTS -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">08</span><span class="sd-slash">/</span><span class="sd-label">Inputs</span>
+    </div>
+    <div class="twocol">
+      <div class="demo-card">
+        <div class="field"><label>Brokerage name</label><input class="input" placeholder="e.g. Meridian Mortgage Group"></div>
+        <div class="field"><label>Province</label>
+          <select class="select"><option>Ontario</option><option>Quebec</option><option>British Columbia</option><option>Alberta</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Loan amount</label>
+          <input class="input input-num" value="425,000" inputmode="numeric">
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="label-tag">Multi-select chips</div>
+        <div class="ds-row" style="margin-bottom:24px">
+          <span class="chip is-on">Residential 1st</span>
+          <span class="chip is-on">Commercial</span>
+          <span class="chip">Land</span>
+          <span class="chip">Construction</span>
+        </div>
+        <div class="label-tag">Slider — LTV maximum</div>
+        <input class="range" type="range" min="0" max="100" value="75" style="margin-bottom:8px">
+        <div class="ds-row" style="justify-content:space-between"><span class="micro muted-text">0%</span><span class="small" style="font-weight:600;color:var(--slate)">75%</span><span class="micro muted-text">100%</span></div>
+        <div class="label-tag" style="margin-top:24px">File drop</div>
+        <div class="filedrop">
+          <div class="small" style="color:var(--slate-deep); font-weight:600">Drop documents here</div>
+          <div class="micro" style="margin-top:4px">Appraisal, MLS, financials — PDF or image</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEAL CARD + OFFER CARD -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">09</span><span class="sd-slash">/</span><span class="sd-label">Cards</span>
+      <span class="sd-meta">Deal card · offer card</span>
+    </div>
+    <div class="twocol">
+      <!-- Deal card (lender variant) -->
+      <div class="card card-pad card-hover">
+        <div class="ds-row" style="justify-content:space-between; margin-bottom:16px">
+          <span class="deal-no" style="font-size:13px">Deal № 0247</span>
+          <span class="pill pill-matched">Matched</span>
+        </div>
+        <div class="ds-row" style="gap:8px; margin-bottom:6px"><span class="pill pill-active" style="background:var(--slate-bg)">Toronto, ON</span></div>
+        <div class="tnum" style="font-family:var(--serif); font-size:34px; color:var(--slate-deep); letter-spacing:-0.02em; margin:6px 0 2px">$425,000 <span style="font-size:14px;color:var(--text-2)">CAD</span></div>
+        <p class="small muted-text" style="margin:12px 0 16px; max-width:48ch">First mortgage on a detached home in East York. Refinance to consolidate; borrower self-employed, strong covenant. 12-month term.</p>
+        <dl class="deflist" style="margin-bottom:18px">
+          <div class="row"><dt>LTV</dt><dd>72.0%</dd></div>
+          <div class="row"><dt>Term</dt><dd>12 months</dd></div>
+        </dl>
+        <div class="ds-row" style="justify-content:space-between; margin-bottom:16px">
+          <span class="micro muted-text" style="letter-spacing:0.1em; text-transform:uppercase">Match</span>
+          <div class="matchbar"><div class="track"><div class="fill" style="width:94%"></div></div><span class="val">94</span></div>
+        </div>
+        <div class="ds-row" style="gap:10px">
+          <button class="btn btn-primary btn-sm" style="flex:1">Make offer</button>
+          <button class="btn btn-ghost btn-sm">Interested</button>
+          <button class="btn btn-tertiary btn-sm">Pass</button>
+        </div>
+      </div>
+
+      <!-- Offer card -->
+      <div class="card card-pad">
+        <div class="ds-row" style="justify-content:space-between; margin-bottom:14px">
+          <div><div class="small" style="font-weight:600;color:var(--slate-deep)">Lender — Anonymized</div><div class="micro muted-text">MIC · Ontario</div></div>
+          <span class="pill pill-offer">Offer In</span>
+        </div>
+        <dl class="deflist" style="margin-bottom:18px">
+          <div class="row"><dt>Rate</dt><dd>9.25%</dd></div>
+          <div class="row"><dt>Lender fee</dt><dd>2.0%</dd></div>
+          <div class="row"><dt>Term</dt><dd>12 months</dd></div>
+          <div class="row"><dt>Conditions</dt><dd>Appraisal, fire insurance</dd></div>
+          <div class="row"><dt>Expires</dt><dd>In 3 days</dd></div>
+        </dl>
+        <div class="ds-row" style="gap:10px">
+          <button class="btn btn-primary btn-sm" style="flex:1">Accept</button>
+          <button class="btn btn-secondary btn-sm">Counter</button>
+          <button class="btn btn-danger btn-sm">Decline</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EMPTY / SKELETON / TOAST -->
+  <section class="ds-section">
+    <div class="section-divider">
+      <span class="sd-num">10</span><span class="sd-slash">/</span><span class="sd-label">States</span>
+      <span class="sd-meta">Empty · loading · toast</span>
+    </div>
+    <div class="twocol" style="margin-bottom:24px">
+      <div class="card" style="overflow:hidden">
+        <div class="empty" style="padding:56px 32px">
+          <div class="em-title">No offers yet.</div>
+          <div class="em-sub">Lenders are reviewing this deal. The first responses typically arrive within forty-eight hours.</div>
+        </div>
+      </div>
+      <div class="card card-pad">
+        <div class="label-tag">Skeleton — no spinners</div>
+        <div class="skel" style="height:14px; width:40%; margin-bottom:12px"></div>
+        <div class="skel" style="height:34px; width:65%; margin-bottom:16px"></div>
+        <div class="skel" style="height:12px; width:100%; margin-bottom:8px"></div>
+        <div class="skel" style="height:12px; width:90%; margin-bottom:8px"></div>
+        <div class="skel" style="height:12px; width:70%"></div>
+      </div>
+    </div>
+    <div class="demo-card">
+      <div class="label-tag">Toast notification</div>
+      <div style="position:relative; height:80px;">
+        <div class="toast show" style="position:absolute; bottom:0; left:0; transform:none">
+          <div>
+            <div style="font-weight:600">Deal № 0247 submitted</div>
+            <div class="small muted-text">Matching against 240 lender criteria sets.</div>
+          </div>
+          <button class="btn btn-tertiary btn-sm" style="margin-left:8px">View</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="padding:48px 0 0; color:var(--muted); font-size:12px;">
+    Plynth — The marketplace for Canadian private lending. Design system v1.0 · Substituting Source Serif 4 for Tiempos, Inter for Söhne.
+  </footer>
+
+</div>
+</body>
+</html>

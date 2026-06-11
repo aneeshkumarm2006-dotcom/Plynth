@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plynth — Broker Portal</title>
+<link rel="stylesheet" href="assets/plynth.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  @media (max-width: 1000px){ .focus-grid{ grid-template-columns:1fr !important; } .focus-grid > div:last-child{ border-left:none !important; border-top:1px solid var(--border); } .dash-cols{ grid-template-columns:1fr !important; gap:40px !important; } .detail-grid{ grid-template-columns:1fr !important; } .lender-grid{ grid-template-columns:1fr !important; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="assets/broker-data.js"></script>
+<script type="text/babel" src="assets/shared.jsx"></script>
+<script type="text/babel" src="assets/broker-screens.jsx"></script>
+<script type="text/babel" src="assets/broker-forms.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* Aggregated offers screen */
+function BrokerOffers({ nav, toast }) {
+  return (
+    <div className="page page-wide">
+      <div style={{ marginBottom: 28 }}>
+        <h1 className="h1">Offers</h1>
+        <p className="lead" style={{ fontSize: 16, marginTop: 6 }}>Live offers across your pipeline. Three new, four awaiting your response.</p>
+      </div>
+      <SectionDivider n="01" label="New offers" meta="Action needed" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 44 }} className="dash-cols">
+        {window.BROKER.newOffers.map((o, i) => (
+          <div key={i} className="card card-pad card-hover" style={{ padding: 22, cursor: "pointer" }} onClick={() => nav("deal", o.no)}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}><DealNo n={o.no} /><Pill status="offer" /></div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
+              <span className="tnum" style={{ fontFamily: "var(--serif)", fontSize: 30, color: "var(--slate-deep)", fontWeight: 600 }}>{o.rate}</span>
+              <span className="small muted-text">· {o.fee} fee · {o.term}</span>
+            </div>
+            <div className="micro muted-text">{o.lender} · {o.city}</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={(e) => { e.stopPropagation(); toast({ title: "Offer on Deal № " + o.no + " accepted" }); }}>Accept</button>
+              <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); nav("deal", o.no); }}>Review</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <SectionDivider n="02" label="Awaiting response" meta="Sent counters" />
+      <div className="card" style={{ overflow: "hidden" }}>
+        {window.BROKER.awaiting.map((d, i) => (
+          <div key={i} onClick={() => nav("deal", d.no)} style={{ display: "flex", alignItems: "center", gap: 20, padding: "18px 22px", borderBottom: i < 1 ? "1px solid var(--border)" : "none", cursor: "pointer" }}>
+            <DealNo n={d.no} />
+            <span className="small" style={{ flex: 1 }}>{d.city}</span>
+            <span className="num small" style={{ fontWeight: 600, color: "var(--slate-deep)" }}>{d.amount}</span>
+            <Pill status="negotiating" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const NAV = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "pipeline", label: "Pipeline" },
+  { id: "submit", label: "Submit Deal" },
+  { id: "offers", label: "Offers" },
+  { id: "funded", label: "Funded" },
+  { id: "lenders", label: "Lenders" },
+  { group: "Account" },
+  { id: "settings", label: "Account" },
+];
+
+function App() {
+  const initialHash = (location.hash || "").replace("#", "");
+  const startAuthed = initialHash !== "login" && initialHash !== "signup";
+  const [authed, setAuthed] = useState(startAuthed);
+  const [route, setRoute] = useState(startAuthed ? "dashboard" : (initialHash || "login"));
+  const [param, setParam] = useState(null);
+  const [toast, fireToast] = useToast();
+
+  const nav = (r, p) => { setRoute(r); setParam(p || null); window.scrollTo(0, 0); };
+  const auth = () => { setAuthed(true); nav("dashboard"); };
+
+  if (!authed) {
+    if (route === "signup") return (<React.Fragment><BrokerSignup nav={nav} onAuth={auth} /><Toast {...(toast || {})} /></React.Fragment>);
+    return (<React.Fragment><BrokerLogin nav={nav} onAuth={auth} /><Toast {...(toast || {})} /></React.Fragment>);
+  }
+
+  const screens = {
+    dashboard: <BrokerDashboard nav={nav} />,
+    pipeline: <BrokerPipeline nav={nav} />,
+    submit: <BrokerSubmit nav={nav} toast={fireToast} />,
+    offers: <BrokerOffers nav={nav} toast={fireToast} />,
+    deal: <BrokerDealDetail nav={nav} toast={fireToast} dealNo={param} />,
+    lenders: <BrokerLenders nav={nav} />,
+    funded: <BrokerFunded nav={nav} />,
+    settings: <BrokerSettings nav={nav} toast={fireToast} />,
+  };
+  const activeNav = route === "deal" ? "pipeline" : route;
+
+  return (
+    <div>
+      <div className="topbar">
+        <Logo size={30} onClick={() => nav("dashboard")} />
+        <div className="spacer" />
+        <button className="btn btn-primary btn-sm" onClick={() => nav("submit")}>Submit a deal</button>
+        <div style={{ width: 1, height: 24, background: "var(--border)", margin: "0 6px" }} />
+        <ProfileMenu name={window.BROKER.user.name} sub={window.BROKER.user.brokerage} initials={window.BROKER.user.initials}
+          items={[
+            { label: "Account settings", onClick: () => nav("settings") },
+            { label: "Brokerage", onClick: () => nav("settings") },
+            { label: "Sign out", danger: true, onClick: () => { setAuthed(false); nav("login"); } },
+          ]} />
+      </div>
+      <div className="app">
+        <Sidebar items={NAV} active={activeNav} onNavigate={nav}
+          footer={<div className="micro muted-text" style={{ padding: "0 12px" }}>Northbridge Mortgage Partners<br />FSRA M08009124</div>} />
+        <div className="app-main">{screens[route]}</div>
+      </div>
+      <Toast {...(toast || {})} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

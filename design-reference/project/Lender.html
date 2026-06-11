@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plynth for Lenders — Curated private lending deals, matched to your criteria</title>
+<link rel="stylesheet" href="assets/plynth.css">
+<style>
+  .mk { max-width:1240px; margin:0 auto; padding:0 40px; }
+  .hero { padding:112px 0 88px; }
+  .hero-grid { display:grid; grid-template-columns:1.3fr 1fr; gap:64px; align-items:center; }
+  @media (max-width:900px){ .hero-grid{ grid-template-columns:1fr; gap:48px; } }
+  .rule { height:1px; background:var(--border); border:none; }
+  .price-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  @media (max-width:880px){ .price-grid{ grid-template-columns:1fr; } }
+  .price-card { background:var(--white); border:1px solid var(--border); border-radius:var(--r-card); padding:32px 28px; display:flex; flex-direction:column; }
+  .price-card.feature { border-color:var(--amber); box-shadow:var(--shadow-md); position:relative; }
+  .price-card .price { font-family:var(--serif); font-size:44px; font-weight:600; color:var(--slate-deep); letter-spacing:-0.02em; font-feature-settings:'tnum' 1; }
+  .feat-li { display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:14px; color:var(--text); }
+  .feat-li .tick { color:var(--sage); font-weight:700; flex-shrink:0; }
+  .logos-row { display:flex; flex-wrap:wrap; gap:14px 40px; align-items:center; }
+  .logo-stub { font-family:var(--serif); font-size:17px; color:var(--muted); font-weight:600; }
+  .mk-footer { background:var(--slate-deep); color:#C9CEDA; margin-top:112px; }
+  .mk-footer a { color:#C9CEDA; }
+  .preview-mini { background:#FCFAF5; border:1px solid var(--border); border-radius:8px; padding:18px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="topbar" style="height:72px; background:transparent; backdrop-filter:none; position:relative">
+  <div style="display:flex; align-items:center; width:100%; max-width:1240px; margin:0 auto; padding:0 40px">
+    <a class="logo" href="Lender.html">
+      <svg class="monogram" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="7" fill="#1F2D44"/>
+        <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#FAF6EF" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+        <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+      </svg>
+      <span class="wordmark">Plynth</span>
+      <span class="micro" style="color:var(--muted); border-left:1px solid var(--border); padding-left:10px; margin-left:4px; letter-spacing:0.1em; text-transform:uppercase">For Lenders</span>
+    </a>
+    <div class="spacer"></div>
+    <nav style="display:flex; align-items:center; gap:32px;">
+      <a class="small" style="color:var(--text-2); font-weight:500" href="#how">How it works</a>
+      <a class="small" style="color:var(--text-2); font-weight:500" href="#pricing">Pricing</a>
+      <a class="small" style="color:var(--text-2); font-weight:500" href="https://brokers.plynth.ca">For brokers</a>
+      <a class="btn btn-tertiary btn-sm" href="Lender Portal.html#login">Sign in</a>
+      <a class="btn btn-primary btn-sm" href="Lender Portal.html#signup">Start matching</a>
+    </nav>
+  </div>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="mk">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow" style="margin-bottom:28px">For private lenders, MICs &amp; debt funds</div>
+        <h1 class="display" style="max-width:15ch">Curated private lending deals, matched to your criteria.</h1>
+        <p class="lead" style="max-width:50ch; margin-top:28px">
+          Define exactly what you fund — asset class, geography, LTV, borrower profile — and
+          Plynth delivers only the deals that fit. No noise. No cold inbound. Just deployable opportunities.
+        </p>
+        <div style="display:flex; gap:14px; margin-top:40px;">
+          <a class="btn btn-primary btn-lg" href="Lender Portal.html#signup">Build your criteria</a>
+          <a class="btn btn-secondary btn-lg" href="#pricing">See pricing</a>
+        </div>
+        <div style="display:flex; gap:40px; margin-top:48px;">
+          <div class="stat"><div class="stat-value" style="font-size:32px">$847M</div><div class="stat-label">Matched Last Quarter</div></div>
+          <div class="stat"><div class="stat-value" style="font-size:32px">11,400</div><div class="stat-label">Deals Sourced</div></div>
+          <div class="stat"><div class="stat-value" style="font-size:32px">94<span class="unit">%</span></div><div class="stat-label">Match Relevance</div></div>
+        </div>
+      </div>
+
+      <!-- Live preview teaser -->
+      <div class="card card-pad" style="padding:32px">
+        <div class="eyebrow" style="margin-bottom:18px; color:var(--amber-deep)">Your criteria, last 30 days</div>
+        <div class="tnum" style="font-family:var(--serif); font-size:52px; font-weight:600; color:var(--slate-deep); letter-spacing:-0.02em; line-height:1">47</div>
+        <p class="small muted-text" style="margin:8px 0 22px">deals would have matched — Residential 1st, Ontario, up to 75% LTV.</p>
+        <hr class="rule" style="margin-bottom:18px">
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <div class="preview-mini" style="display:flex; justify-content:space-between; align-items:center">
+            <div><div class="deal-no" style="font-size:12px">Deal № 0247</div><div class="micro muted-text">Toronto, ON · 72% LTV</div></div>
+            <div style="text-align:right"><div class="tnum" style="font-family:var(--serif); font-size:18px; color:var(--slate-deep); font-weight:600">$425K</div><div class="micro" style="color:var(--amber-deep); font-weight:600">94 match</div></div>
+          </div>
+          <div class="preview-mini" style="display:flex; justify-content:space-between; align-items:center">
+            <div><div class="deal-no" style="font-size:12px">Deal № 0231</div><div class="micro muted-text">Hamilton, ON · 68% LTV</div></div>
+            <div style="text-align:right"><div class="tnum" style="font-family:var(--serif); font-size:18px; color:var(--slate-deep); font-weight:600">$540K</div><div class="micro" style="color:var(--amber-deep); font-weight:600">91 match</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- TRUST -->
+<section class="mk" style="padding:8px 40px 64px">
+  <hr class="rule" style="margin-bottom:40px">
+  <div class="logos-row">
+    <span class="micro" style="letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-right:8px">Deployed by</span>
+    <span class="logo-stub">Fortress MIC</span>
+    <span class="logo-stub">Cardinal Private</span>
+    <span class="logo-stub">Bridgewater Funds</span>
+    <span class="logo-stub">Northpine</span>
+    <span class="logo-stub">Slate River</span>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="mk" id="how" style="padding:64px 40px">
+  <div class="section-divider">
+    <span class="sd-num">01</span><span class="sd-slash">/</span><span class="sd-label">How it works</span>
+    <span class="sd-meta">Set criteria once. Receive only what fits.</span>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:8px; overflow:hidden">
+    <div style="background:var(--offwhite); padding:40px 36px">
+      <div style="font-family:var(--serif); font-size:15px; color:var(--amber-deep)">01</div>
+      <h3 class="h3" style="margin:16px 0 12px">Build your criteria</h3>
+      <p class="body muted-text">Configure asset classes, geography, loan parameters, borrower profile, capacity and speed — like tuning a precision instrument.</p>
+    </div>
+    <div style="background:var(--offwhite); padding:40px 36px">
+      <div style="font-family:var(--serif); font-size:15px; color:var(--amber-deep)">02</div>
+      <h3 class="h3" style="margin:16px 0 12px">Receive matched deals</h3>
+      <p class="body muted-text">Every new submission is scored against your criteria. Only relevant deals reach you, ranked by match strength.</p>
+    </div>
+    <div style="background:var(--offwhite); padding:40px 36px">
+      <div style="font-family:var(--serif); font-size:15px; color:var(--amber-deep)">03</div>
+      <h3 class="h3" style="margin:16px 0 12px">Make competitive offers</h3>
+      <p class="body muted-text">Offer with confidence using comparable-deal data only Plynth has, then track the file from interest to funding.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="mk" id="pricing" style="padding:64px 40px">
+  <div class="section-divider">
+    <span class="sd-num">02</span><span class="sd-slash">/</span><span class="sd-label">Pricing</span>
+    <span class="sd-meta">Monthly, billed in CAD. No success fees.</span>
+  </div>
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="h4" style="margin-bottom:4px">Starter</div>
+      <p class="small muted-text" style="margin-bottom:20px; min-height:40px">For individual private lenders deploying selectively.</p>
+      <div class="price">$299<span style="font-size:15px; color:var(--text-2); font-weight:400">/mo</span></div>
+      <div style="margin:24px 0; flex:1">
+        <div class="feat-li"><span class="tick">✓</span> Up to 25 matched deals / month</div>
+        <div class="feat-li"><span class="tick">✓</span> 1 criteria profile</div>
+        <div class="feat-li"><span class="tick">✓</span> Standard match scoring</div>
+        <div class="feat-li"><span class="tick">✓</span> Email deal alerts</div>
+      </div>
+      <a class="btn btn-secondary btn-block" href="Lender Portal.html#signup">Choose Starter</a>
+    </div>
+    <div class="price-card feature">
+      <div style="position:absolute; top:-1px; right:24px; background:var(--amber); color:var(--slate-deep); font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:4px 12px; border-radius:0 0 5px 5px">Most chosen</div>
+      <div class="h4" style="margin-bottom:4px">Professional</div>
+      <p class="small muted-text" style="margin-bottom:20px; min-height:40px">For MICs and active lenders with steady deployment.</p>
+      <div class="price">$599<span style="font-size:15px; color:var(--text-2); font-weight:400">/mo</span></div>
+      <div style="margin:24px 0; flex:1">
+        <div class="feat-li"><span class="tick">✓</span> Unlimited matched deals</div>
+        <div class="feat-li"><span class="tick">✓</span> Up to 5 criteria profiles</div>
+        <div class="feat-li"><span class="tick">✓</span> Comparable-deal analytics</div>
+        <div class="feat-li"><span class="tick">✓</span> Priority matching &amp; instant alerts</div>
+        <div class="feat-li"><span class="tick">✓</span> Win-rate &amp; deployment reporting</div>
+      </div>
+      <a class="btn btn-primary btn-block" href="Lender Portal.html#signup">Choose Professional</a>
+    </div>
+    <div class="price-card">
+      <div class="h4" style="margin-bottom:4px">Enterprise</div>
+      <p class="small muted-text" style="margin-bottom:20px; min-height:40px">For debt funds and family offices at scale.</p>
+      <div class="price">$999<span style="font-size:15px; color:var(--text-2); font-weight:400">/mo</span></div>
+      <div style="margin:24px 0; flex:1">
+        <div class="feat-li"><span class="tick">✓</span> Everything in Professional</div>
+        <div class="feat-li"><span class="tick">✓</span> Unlimited criteria profiles</div>
+        <div class="feat-li"><span class="tick">✓</span> Team seats &amp; roles</div>
+        <div class="feat-li"><span class="tick">✓</span> API &amp; portfolio export</div>
+        <div class="feat-li"><span class="tick">✓</span> Dedicated relationship manager</div>
+      </div>
+      <a class="btn btn-secondary btn-block" href="Lender Portal.html#signup">Contact sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="mk" style="padding:40px 40px 0">
+  <div class="card" style="background:var(--slate-deep); border:none; padding:64px 56px; display:flex; align-items:center; justify-content:space-between; gap:40px; flex-wrap:wrap">
+    <div>
+      <h2 class="h2" style="color:#FAF6EF; max-width:20ch">See how many deals you would have matched last month.</h2>
+      <p class="lead" style="color:#AEB7C7; margin-top:16px; max-width:46ch">Build your criteria in four minutes. No card required to preview.</p>
+    </div>
+    <a class="btn btn-primary btn-lg" href="Lender Portal.html#signup">Build your criteria</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="mk-footer">
+  <div class="mk" style="padding:72px 40px 40px">
+    <div style="display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:40px; margin-bottom:56px">
+      <div>
+        <a class="logo" href="Lender.html">
+          <svg class="monogram" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="7" fill="#FAF6EF"/>
+            <path d="M11.6 24V8.4H16.8a4.8 4.8 0 0 1 0 9.6H11.6" stroke="#1F2D44" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+            <rect x="8.2" y="24" width="15.6" height="2.3" rx="0.5" fill="#D4A574"/>
+          </svg>
+          <span class="wordmark" style="color:#FAF6EF">Plynth</span>
+        </a>
+        <p class="small" style="color:#8C97AD; margin-top:18px; max-width:34ch">Curated private lending deals, matched to your criteria.</p>
+      </div>
+      <div>
+        <div class="micro" style="letter-spacing:0.14em; text-transform:uppercase; color:#6E7A92; margin-bottom:16px">Product</div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <a class="small" href="#how">How it works</a>
+          <a class="small" href="#pricing">Pricing</a>
+          <a class="small" href="https://brokers.plynth.ca">For brokers</a>
+        </div>
+      </div>
+      <div>
+        <div class="micro" style="letter-spacing:0.14em; text-transform:uppercase; color:#6E7A92; margin-bottom:16px">Company</div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <a class="small" href="#">About</a>
+          <a class="small" href="#">Security</a>
+          <a class="small" href="#">Contact</a>
+        </div>
+      </div>
+      <div>
+        <div class="micro" style="letter-spacing:0.14em; text-transform:uppercase; color:#6E7A92; margin-bottom:16px">Legal</div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <a class="small" href="#">Privacy</a>
+          <a class="small" href="#">Terms</a>
+          <a class="small" href="#">Compliance</a>
+        </div>
+      </div>
+    </div>
+    <hr class="rule" style="background:#2E3D57; margin-bottom:28px">
+    <p class="micro" style="max-width:90ch; line-height:1.7; color:#8C97AD">
+      Plynth Technologies Inc. operates a marketplace platform and is not a lender, mortgage broker, or
+      dealer. Plynth does not originate, fund, or service mortgages and provides no lending or investment
+      advice. Lenders are responsible for their own due diligence, suitability assessments, and compliance
+      with applicable provincial securities and mortgage regulation. Match counts and figures are
+      illustrative of platform activity. © 2026 Plynth Technologies Inc. Toronto, Canada.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

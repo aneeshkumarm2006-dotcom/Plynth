@@ -1,0 +1,13 @@
+{
+  "name": "@plynth/shared",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./types": "./src/types.ts",
+    "./utils": "./src/utils/index.ts",
+    "./hooks": "./src/hooks/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
