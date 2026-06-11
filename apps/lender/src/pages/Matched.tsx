@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Chip, EmptyState } from '@plynth/shared/ui';
 import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
-import { matchedService, type MatchedDeal } from '@plynth/supabase/services';
+import {
+  matchedService,
+  notificationsService,
+  type MatchedDeal,
+} from '@plynth/supabase/services';
 import { MatchCard } from '../components/MatchCard';
 import { useToastFire } from '../components/ToastContext';
 import { matchedToCard } from '../lib/present';
@@ -20,10 +24,18 @@ export function Matched() {
   const toast = useToastFire();
   const { profile } = useAuth();
 
-  const { data, loading } = useAsync<MatchedDeal[]>(
+  const { data, loading, refresh } = useAsync<MatchedDeal[]>(
     () => matchedService.listForLender(profile?.id ?? ''),
     [profile?.id]
   );
+
+  // Refresh the matched list when a realtime notification arrives. In mock
+  // mode `subscribe` is a no-op, so this is inert without Supabase wired.
+  useEffect(() => {
+    if (!profile?.id) return;
+    const unsubscribe = notificationsService.subscribe(profile.id, () => refresh());
+    return unsubscribe;
+  }, [profile?.id, refresh]);
 
   let rows = [...(data ?? [])];
   if (asset !== 'all') rows = rows.filter((d) => d.asset_class === asset);

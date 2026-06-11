@@ -6,27 +6,85 @@ import {
   FigurePlaceholder,
   SectionDivider,
 } from '@plynth/shared/ui';
+import { useAuth } from '@plynth/supabase/auth';
+import { dealsService, type DealSubmitInput } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
 
 const STEPS = ['Property', 'Loan details', 'Borrower', 'Documents', 'Review'];
 
+const POSITION_VALUES: Record<string, DealSubmitInput['position']> = {
+  'First mortgage': 'first',
+  'Second mortgage': 'second',
+  'Third mortgage': 'third+',
+};
+
+// Parse a display amount like "425,000" into integer cents.
+function dollarsToCents(s: string): number {
+  return Math.round((parseFloat(s.replace(/[^0-9.]/g, '')) || 0) * 100);
+}
+
 export function Submit() {
   const navigate = useNavigate();
   const toast = useToastFire();
+  const { profile } = useAuth();
   const [step, setStep] = useState(0);
   const [extracted, setExtracted] = useState(false);
   const [anon, setAnon] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const onContinue = () => {
+  // Controlled state for the fields that map to DealSubmitInput. The remaining
+  // demo fields stay uncontrolled; their defaults seed the submission.
+  const [address, setAddress] = useState('142 Westbrook Avenue, East York, Toronto, ON');
+  const [propertyType, setPropertyType] = useState('Detached');
+  const [loanAmount, setLoanAmount] = useState('425,000');
+  const [appraisedValue, setAppraisedValue] = useState('590,000');
+  const [position, setPosition] = useState('First mortgage');
+  const [term, setTerm] = useState('12 months');
+  const [employment, setEmployment] = useState('Self-employed');
+
+  const loanCents = dollarsToCents(loanAmount);
+  const valueCents = dollarsToCents(appraisedValue);
+  const ltv = valueCents > 0 ? Math.round((loanCents / valueCents) * 1000) / 10 : 0;
+
+  const buildInput = (): DealSubmitInput => {
+    // Derive city/province from the trailing tokens of the address line.
+    const parts = address.split(',').map((p) => p.trim());
+    const province = parts[parts.length - 1] || 'ON';
+    const city = parts[parts.length - 2] || parts[0] || '';
+    return {
+      deal_number: '0252',
+      city,
+      province,
+      property_address: address,
+      property_type: propertyType,
+      asset_class: 'Residential 1st',
+      loan_amount_cents: loanCents,
+      estimated_value_cents: valueCents,
+      ltv,
+      position: POSITION_VALUES[position] ?? 'first',
+      term_months: parseInt(term, 10) || 12,
+      is_self_employed: employment === 'Self-employed',
+    };
+  };
+
+  const onContinue = async () => {
     if (step < 4) {
       setStep((s) => s + 1);
       return;
     }
-    toast({
-      title: 'Deal № 0252 submitted',
-      sub: 'Matching against 240 lender criteria sets.',
-    });
-    navigate('/');
+    setSubmitting(true);
+    try {
+      const deal = await dealsService.create(profile?.id ?? '', buildInput());
+      toast({
+        title: `Deal № ${deal.deal_number} submitted`,
+        sub: 'Matching against subscribed lender criteria sets.',
+      });
+      navigate('/pipeline');
+    } catch (err) {
+      toast({ title: 'Could not submit deal', sub: (err as Error).message });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -81,7 +139,8 @@ export function Submit() {
               <input
                 className="input"
                 placeholder="Start typing an address…"
-                defaultValue="142 Westbrook Avenue, East York, Toronto, ON"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
               />
             </Field>
             <FigurePlaceholder
@@ -90,7 +149,11 @@ export function Submit() {
             />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <Field label="Property type">
-                <select className="select">
+                <select
+                  className="select"
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                >
                   <option>Detached</option>
                   <option>Semi-detached</option>
                   <option>Townhouse</option>
@@ -116,13 +179,25 @@ export function Submit() {
             <SectionDivider n="02" label="Loan details" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <Field label="Loan amount (CAD)">
-                <input className="input input-num" defaultValue="425,000" />
+                <input
+                  className="input input-num"
+                  value={loanAmount}
+                  onChange={(e) => setLoanAmount(e.target.value)}
+                />
               </Field>
               <Field label="Appraised value (CAD)">
-                <input className="input input-num" defaultValue="590,000" />
+                <input
+                  className="input input-num"
+                  value={appraisedValue}
+                  onChange={(e) => setAppraisedValue(e.target.value)}
+                />
               </Field>
               <Field label="Position">
-                <select className="select">
+                <select
+                  className="select"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                >
                   <option>First mortgage</option>
                   <option>Second mortgage</option>
                   <option>Third mortgage</option>
@@ -131,13 +206,13 @@ export function Submit() {
               <Field label="Computed LTV" hint="Auto-calculated">
                 <input
                   className="input input-num"
-                  defaultValue="72.0%"
+                  value={ltv.toFixed(1) + '%'}
                   readOnly
                   style={{ background: '#FCFAF5' }}
                 />
               </Field>
               <Field label="Term">
-                <select className="select">
+                <select className="select" value={term} onChange={(e) => setTerm(e.target.value)}>
                   <option>6 months</option>
                   <option>12 months</option>
                   <option>18 months</option>
@@ -206,7 +281,11 @@ export function Submit() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <Field label="Employment">
-                <select className="select">
+                <select
+                  className="select"
+                  value={employment}
+                  onChange={(e) => setEmployment(e.target.value)}
+                >
                   <option>Self-employed</option>
                   <option>Salaried</option>
                   <option>Commission</option>
@@ -358,12 +437,12 @@ export function Submit() {
             <SectionDivider n="05" label="Review & submit" />
             <DefList
               items={[
-                ['Property', '142 Westbrook Avenue, East York, Toronto, ON'],
-                ['Property type', 'Detached, owner-occupied'],
-                ['Loan amount', '$425,000 CAD'],
-                ['Position', 'First mortgage'],
-                ['LTV', '72.0%'],
-                ['Term', '12 months'],
+                ['Property', address],
+                ['Property type', `${propertyType}, owner-occupied`],
+                ['Loan amount', '$' + loanAmount + ' CAD'],
+                ['Position', position],
+                ['LTV', ltv.toFixed(1) + '%'],
+                ['Term', term],
                 ['Rate expectation', '8.5–11%'],
                 ['Borrower', anon ? 'Anonymized until lender interest' : 'Revealed on submission'],
                 ['Documents', '3 attached'],
@@ -408,8 +487,8 @@ export function Submit() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="btn btn-tertiary">Save draft</button>
-          <button className="btn btn-primary" onClick={onContinue}>
-            {step < 4 ? 'Continue' : 'Submit to marketplace'}
+          <button className="btn btn-primary" onClick={onContinue} disabled={submitting}>
+            {step < 4 ? 'Continue' : submitting ? 'Submitting…' : 'Submit to marketplace'}
           </button>
         </div>
       </div>

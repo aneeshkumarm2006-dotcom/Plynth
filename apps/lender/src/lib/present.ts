@@ -4,6 +4,7 @@
 // service layer.
 import type { MatchedDeal, FundingRow } from '@plynth/supabase/services';
 import type { MatchCardData } from '../components/MatchCard';
+import type { SampleMatch } from '../components/CriteriaBuilder';
 
 const POSITION_LABELS: Record<string, string> = {
   first: 'First',
@@ -61,6 +62,19 @@ export function matchedToCard(d: MatchedDeal): MatchCardData {
     asset: d.asset_class,
     summary: d.summary ?? 'Deal matched against your active criteria.',
     age: d.age ?? bareAge(d.matched_at),
+  };
+}
+
+// Compact card for the CriteriaBuilder "Sample matches" preview panel.
+export function matchedToSample(d: MatchedDeal): SampleMatch {
+  return {
+    no: d.deal_number,
+    amount: dollars(d.loan_amount_cents),
+    city: cityProvince(d.city, d.province),
+    ltv: ltvPct(d.ltv),
+    score: d.match_score,
+    asset: d.asset_class,
+    term: termLabel(d.term_months),
   };
 }
 

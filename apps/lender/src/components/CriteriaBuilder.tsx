@@ -10,12 +10,27 @@ import { useDebouncedValue } from '@plynth/shared/hooks';
 import { estimateMatchCount, formatMoneyShort } from '@plynth/shared/utils';
 import type { BuilderState } from '@plynth/supabase/services';
 
+// Shape the "Sample matches" panel renders. Mirrors the LENDER_MOCK.matched
+// fixture so onboarding (pre-auth) and the live Criteria page share one card.
+export interface SampleMatch {
+  no: string;
+  amount: string;
+  city: string;
+  ltv: string;
+  score: number;
+  asset: string;
+  term: string;
+}
+
 export interface CriteriaBuilderProps {
   initial?: BuilderState;
   onComplete?: (c: BuilderState) => void;
   ctaLabel?: string;
   note?: string;
   embedded?: boolean;
+  /** Sample cards for the live preview. Defaults to fixture data so the
+   *  unauthenticated onboarding flow is unchanged. */
+  sampleDeals?: SampleMatch[];
 }
 
 export function CriteriaBuilder({
@@ -24,6 +39,7 @@ export function CriteriaBuilder({
   ctaLabel,
   note,
   embedded,
+  sampleDeals = LENDER_MOCK.matched.slice(0, 3),
 }: CriteriaBuilderProps) {
   const [c, setC] = useState<BuilderState>(initial ?? LENDER_MOCK.criteria);
 
@@ -48,7 +64,7 @@ export function CriteriaBuilder({
   // Debounce so we don't recompute on every keystroke; matches the spec.
   const debounced = useDebouncedValue(c, 200);
   const matches = estimateMatchCount(debounced);
-  const sample = LENDER_MOCK.matched.slice(0, 3);
+  const sample = sampleDeals;
 
   return (
     <div

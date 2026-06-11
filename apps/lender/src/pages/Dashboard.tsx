@@ -7,10 +7,17 @@ import {
   StatStrip,
   EmptyState,
 } from '@plynth/shared/ui';
+import { useEffect } from 'react';
 import { LENDER_MOCK } from '@plynth/shared/mock';
 import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
-import { matchedService, type MatchedDeal } from '@plynth/supabase/services';
+import {
+  analyticsService,
+  matchedService,
+  notificationsService,
+  type MatchedDeal,
+  type StatBlockData,
+} from '@plynth/supabase/services';
 import { MatchCard } from '../components/MatchCard';
 import { useToastFire } from '../components/ToastContext';
 import { matchedToCard, cityProvince, dollars, ltvPct, termLabel, positionLabel } from '../lib/present';
@@ -23,13 +30,24 @@ export function Dashboard() {
   const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const first = (profile?.first_name ?? LENDER_MOCK.user.name).split(' ')[0];
 
-  const { data: matched, loading } = useAsync<MatchedDeal[]>(
+  const { data: matched, loading, refresh } = useAsync<MatchedDeal[]>(
     () => matchedService.listForLender(profile?.id ?? ''),
     [profile?.id]
   );
 
-  // Stats + performance remain fixture-backed pending an analytics endpoint
-  // (Funded YTD / Deployment Rate / Win Rate need aggregate queries — Phase 4).
+  const { data: stats } = useAsync<StatBlockData[]>(
+    () => analyticsService.lenderStats(profile?.id ?? ''),
+    [profile?.id]
+  );
+
+  // Refresh the matched list when a realtime notification arrives. In mock
+  // mode `subscribe` is a no-op, so this is inert without Supabase wired.
+  useEffect(() => {
+    if (!profile?.id) return;
+    const unsubscribe = notificationsService.subscribe(profile.id, () => refresh());
+    return unsubscribe;
+  }, [profile?.id, refresh]);
+
   const L = LENDER_MOCK;
   const rows = matched ?? [];
   const focus = rows[0] ?? null;
@@ -48,7 +66,7 @@ export function Dashboard() {
         </p>
       </div>
       <div style={{ marginBottom: 32 }}>
-        <StatStrip stats={L.stats} />
+        <StatStrip stats={stats ?? L.stats} />
       </div>
       {focus && (
         <div style={{ marginBottom: 44 }}>
@@ -86,6 +104,8 @@ export function Dashboard() {
         </div>
         <aside>
           <SectionDivider n="02" label="Performance" />
+          {/* TODO: Win Rate / Avg Response lack a backing aggregate query —
+              still fixture-backed from LENDER_MOCK.sidebarStats. */}
           <div className="card card-pad" style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>

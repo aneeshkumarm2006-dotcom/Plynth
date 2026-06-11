@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Chip, Pill } from '@plynth/shared/ui';
-import { BROKER_MOCK } from '@plynth/shared/mock';
+import { Chip, Pill, EmptyState } from '@plynth/shared/ui';
+import { useAsync } from '@plynth/shared/hooks';
+import { useAuth } from '@plynth/supabase/auth';
+import { dealsService, type DealRow } from '@plynth/supabase/services';
+import { dealRowToCard } from '../lib/present';
 
 const FILTERS: Array<[string, string]> = [
   ['all', 'All'],
@@ -13,10 +16,16 @@ const FILTERS: Array<[string, string]> = [
 
 export function Pipeline() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [filter, setFilter] = useState('all');
-  const rows = BROKER_MOCK.pipeline.filter(
-    (d) => filter === 'all' || d.status === filter
+
+  const { data, loading } = useAsync<DealRow[]>(
+    () => dealsService.listForBroker(profile?.id ?? ''),
+    [profile?.id]
   );
+
+  const all = (data ?? []).map(dealRowToCard);
+  const rows = all.filter((d) => filter === 'all' || d.status === filter);
 
   return (
     <div className="page page-wide">
@@ -31,7 +40,7 @@ export function Pipeline() {
         <div>
           <h1 className="h1">Pipeline</h1>
           <p className="lead" style={{ fontSize: 16, marginTop: 6 }}>
-            {BROKER_MOCK.pipeline.length} deals in the marketplace.
+            {all.length} deals in the marketplace.
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/submit')}>
@@ -47,104 +56,113 @@ export function Pipeline() {
         ))}
       </div>
 
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Deal', 'Location', 'Amount', 'Position', 'LTV', 'Term', 'Offers', 'Status', ''].map(
-                (h, i) => (
-                  <th
-                    key={i}
+      {loading && all.length === 0 ? (
+        <div className="skel" style={{ height: 320, borderRadius: 8 }} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No deals here yet"
+          sub="Submit a deal to the marketplace, or change the filter to see more of your pipeline."
+        />
+      ) : (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                {['Deal', 'Location', 'Amount', 'Position', 'LTV', 'Term', 'Offers', 'Status', ''].map(
+                  (h, i) => (
+                    <th
+                      key={i}
+                      style={{
+                        textAlign: i >= 2 && i <= 6 ? 'right' : 'left',
+                        padding: '14px 18px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--text-2)',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  )
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d, i) => (
+                <tr
+                  key={d.routeId || d.no}
+                  style={{
+                    borderBottom:
+                      i < rows.length - 1 ? '1px solid var(--border)' : 'none',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => navigate(`/deals/${d.routeId}`)}
+                  onMouseEnter={(e) =>
+                    ((e.currentTarget as HTMLTableRowElement).style.background = '#FCFAF5')
+                  }
+                  onMouseLeave={(e) =>
+                    ((e.currentTarget as HTMLTableRowElement).style.background = 'transparent')
+                  }
+                >
+                  <td style={{ padding: '16px 18px' }}>
+                    <span className="deal-no" style={{ fontSize: 14 }}>
+                      № {d.no}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px 18px', fontSize: 14 }}>{d.city}</td>
+                  <td
+                    className="num"
                     style={{
-                      textAlign: i >= 2 && i <= 6 ? 'right' : 'left',
-                      padding: '14px 18px',
-                      fontSize: 11,
+                      padding: '16px 18px',
+                      textAlign: 'right',
                       fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
+                      color: 'var(--slate-deep)',
+                    }}
+                  >
+                    {d.amount}
+                  </td>
+                  <td
+                    style={{
+                      padding: '16px 18px',
+                      textAlign: 'right',
+                      fontSize: 14,
                       color: 'var(--text-2)',
                     }}
                   >
-                    {h}
-                  </th>
-                )
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((d, i) => (
-              <tr
-                key={d.no}
-                style={{
-                  borderBottom:
-                    i < rows.length - 1 ? '1px solid var(--border)' : 'none',
-                  cursor: 'pointer',
-                }}
-                onClick={() => navigate(`/deals/${d.no}`)}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLTableRowElement).style.background = '#FCFAF5')
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLTableRowElement).style.background = 'transparent')
-                }
-              >
-                <td style={{ padding: '16px 18px' }}>
-                  <span className="deal-no" style={{ fontSize: 14 }}>
-                    № {d.no}
-                  </span>
-                </td>
-                <td style={{ padding: '16px 18px', fontSize: 14 }}>{d.city}</td>
-                <td
-                  className="num"
-                  style={{
-                    padding: '16px 18px',
-                    textAlign: 'right',
-                    fontWeight: 600,
-                    color: 'var(--slate-deep)',
-                  }}
-                >
-                  {d.amount}
-                </td>
-                <td
-                  style={{
-                    padding: '16px 18px',
-                    textAlign: 'right',
-                    fontSize: 14,
-                    color: 'var(--text-2)',
-                  }}
-                >
-                  {d.position}
-                </td>
-                <td className="num" style={{ padding: '16px 18px', textAlign: 'right' }}>
-                  {d.ltv}
-                </td>
-                <td
-                  className="num"
-                  style={{ padding: '16px 18px', textAlign: 'right', color: 'var(--text-2)' }}
-                >
-                  {d.term}
-                </td>
-                <td className="num" style={{ padding: '16px 18px', textAlign: 'right' }}>
-                  {d.offers || '—'}
-                </td>
-                <td style={{ padding: '16px 18px' }}>
-                  <Pill status={d.status} />
-                </td>
-                <td
-                  style={{
-                    padding: '16px 18px',
-                    textAlign: 'right',
-                    color: 'var(--muted)',
-                    fontSize: 18,
-                  }}
-                >
-                  ›
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    {d.position}
+                  </td>
+                  <td className="num" style={{ padding: '16px 18px', textAlign: 'right' }}>
+                    {d.ltv}
+                  </td>
+                  <td
+                    className="num"
+                    style={{ padding: '16px 18px', textAlign: 'right', color: 'var(--text-2)' }}
+                  >
+                    {d.term}
+                  </td>
+                  <td className="num" style={{ padding: '16px 18px', textAlign: 'right' }}>
+                    {d.offers || '—'}
+                  </td>
+                  <td style={{ padding: '16px 18px' }}>
+                    <Pill status={d.status} />
+                  </td>
+                  <td
+                    style={{
+                      padding: '16px 18px',
+                      textAlign: 'right',
+                      color: 'var(--muted)',
+                      fontSize: 18,
+                    }}
+                  >
+                    ›
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

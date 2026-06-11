@@ -1,13 +1,61 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DealNo, DefList, Pill, SectionDivider } from '@plynth/shared/ui';
 import { BROKER_MOCK } from '@plynth/shared/mock';
+import { useAsync } from '@plynth/shared/hooks';
+import { useAuth } from '@plynth/supabase/auth';
+import {
+  dealsService,
+  offersService,
+  type DealRow,
+  type OfferRow,
+} from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
+import {
+  cityProvince,
+  dollars,
+  ltvPct,
+  positionLabel,
+  termLabel,
+  offerToCard,
+  type OfferDisplay,
+} from '../lib/present';
+
+type ToastFn = ReturnType<typeof useToastFire>;
 
 export function DealDetail() {
   const { dealId } = useParams();
   const navigate = useNavigate();
   const toast = useToastFire();
+  useAuth();
+
+  const { data: deal } = useAsync<DealRow | null>(
+    () => dealsService.getById(dealId ?? ''),
+    [dealId]
+  );
+  const { data: offerRows, loading: offersLoading, refresh } = useAsync<OfferRow[]>(
+    () => offersService.listForDeal(dealId ?? ''),
+    [dealId]
+  );
+
   const f = BROKER_MOCK.focus;
+  // View model: live deal when resolved, editorial fixture as the fallback.
+  const isMockDeal = deal != null && typeof (deal as DealRow).loan_amount_cents !== 'number';
+  const view = {
+    no: deal?.deal_number ?? (deal as any)?.no ?? dealId ?? f.no,
+    amount: deal && !isMockDeal ? dollars(deal.loan_amount_cents) : (deal as any)?.amount ?? f.amount,
+    position:
+      deal && !isMockDeal ? positionLabel(deal.position) : ((deal as any)?.position ?? f.position),
+    ltv: deal && !isMockDeal ? ltvPct(deal.ltv) : ((deal as any)?.ltv ?? f.ltv),
+    term: deal && !isMockDeal ? termLabel(deal.term_months) : ((deal as any)?.term ?? f.term),
+    neighbourhood: deal?.neighbourhood ?? f.neighbourhood,
+    city: deal && !isMockDeal ? cityProvince(deal.city, deal.province) : (deal?.city ?? f.city),
+    status: deal?.status ?? f.status,
+  };
+  // The real deal UUID to attach actions to (mock mode falls back to the number).
+  const actionDealId = deal?.id ?? dealId ?? f.no;
+
+  const offers = (offerRows ?? []).map((o, i) => offerToCard(o, i));
 
   return (
     <div className="page page-wide">
@@ -28,11 +76,11 @@ export function DealDetail() {
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-            <DealNo n={dealId || f.no} size={15} />
-            <Pill status="negotiating" />
+            <DealNo n={view.no} size={15} />
+            <Pill status={view.status} />
           </div>
           <h1 className="h1">
-            {f.amount}{' '}
+            {view.amount}{' '}
             <span
               style={{
                 fontSize: 18,
@@ -45,21 +93,10 @@ export function DealDetail() {
             </span>
           </h1>
           <p className="lead" style={{ fontSize: 16, marginTop: 6 }}>
-            {f.position} · {f.neighbourhood}, {f.city}
+            {view.position} · {view.neighbourhood}, {view.city}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() =>
-              toast({
-                title: 'Borrower details revealed',
-                sub: 'Visible to lenders with active offers.',
-              })
-            }
-          >
-            Reveal borrower
-          </button>
           <button className="btn btn-secondary btn-sm">Edit deal</button>
         </div>
       </div>
@@ -81,11 +118,11 @@ export function DealDetail() {
               <DefList
                 items={[
                   ['Property type', 'Detached, residential'],
-                  ['Loan amount', f.amount + ' CAD'],
-                  ['Position', f.position],
-                  ['LTV', f.ltv],
+                  ['Loan amount', view.amount + ' CAD'],
+                  ['Position', view.position],
+                  ['LTV', view.ltv],
                   ['Appraised value', '$590,000 CAD'],
-                  ['Term', f.term],
+                  ['Term', view.term],
                   ['Rate expectation', f.rate],
                   ['Purpose', 'Refinance — debt consolidation'],
                 ]}
@@ -94,12 +131,11 @@ export function DealDetail() {
             <div>
               <SectionDivider n="02" label="Summary" meta="AI-generated" />
               <p className="body" style={{ color: 'var(--text)', lineHeight: 1.65 }}>
-                A first mortgage refinance on an owner-occupied detached home in East York,
-                Toronto. The borrower is self-employed with two years of established business
-                income and seeks to consolidate higher-interest obligations.
+                {deal?.notes ??
+                  'A first mortgage refinance on an owner-occupied detached home in East York, Toronto. The borrower is self-employed with two years of established business income and seeks to consolidate higher-interest obligations.'}
               </p>
               <p className="body" style={{ color: 'var(--text)', lineHeight: 1.65, marginTop: 14 }}>
-                At 72% loan-to-value against a recent appraisal of $590,000, the position is
+                At {view.ltv} loan-to-value against a recent appraisal of $590,000, the position is
                 conservative for the segment. Exit is via refinance to an institutional lender at
                 term, supported by an improving credit profile. Comparable East York refinances
                 on Plynth have funded between 8.75% and 9.5%.
@@ -107,15 +143,25 @@ export function DealDetail() {
             </div>
           </div>
 
-          <SectionDivider
-            n="03"
-            label="Offers"
-            meta={BROKER_MOCK.dealOffers.length + ' received'}
-          />
+          <SectionDivider n="03" label="Offers" meta={offers.length + ' received'} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {BROKER_MOCK.dealOffers.map((o) => (
-              <OfferCard key={o.id} o={o} toast={toast} />
-            ))}
+            {offersLoading && offers.length === 0 ? (
+              <>
+                <div className="skel" style={{ height: 220, borderRadius: 8 }} />
+                <div className="skel" style={{ height: 220, borderRadius: 8 }} />
+              </>
+            ) : (
+              offers.map((o) => (
+                <OfferCard
+                  key={o.id}
+                  o={o}
+                  dealId={actionDealId}
+                  toast={toast}
+                  onChanged={refresh}
+                  onAccepted={() => navigate('/funded')}
+                />
+              ))
+            )}
           </div>
         </div>
 
@@ -161,20 +207,91 @@ export function DealDetail() {
   );
 }
 
-interface OfferDisplay {
-  id: string;
-  type: string;
-  rate: string;
-  lenderFee: string;
-  brokerFee: string;
-  term: string;
-  conditions: string;
-  expires: string;
-  note?: string;
-  best?: boolean;
-}
+function OfferCard({
+  o,
+  dealId,
+  toast,
+  onChanged,
+  onAccepted,
+}: {
+  o: OfferDisplay;
+  dealId: string;
+  toast: ToastFn;
+  onChanged: () => void;
+  onAccepted: () => void;
+}) {
+  const [busy, setBusy] = useState<null | 'accept' | 'counter' | 'reject' | 'reveal'>(null);
 
-function OfferCard({ o, toast }: { o: OfferDisplay; toast: (t: any) => void }) {
+  const accept = async () => {
+    setBusy('accept');
+    try {
+      await offersService.accept(o.id);
+      toast({
+        title: 'Offer from ' + o.label + ' accepted',
+        sub: 'The lender has been notified. Funding instructions will follow.',
+      });
+      onAccepted();
+    } catch (err) {
+      toast({ title: 'Could not accept offer', sub: (err as Error).message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const counter = async () => {
+    setBusy('counter');
+    try {
+      // Counter just under the lender's quoted rate. A dedicated counter form is
+      // a follow-up; for now we shave 0.25% off and note it for the lender.
+      const counterRate = Math.max(0, Math.round((o.rateValue - 0.25) * 100) / 100);
+      await offersService.counter(o.id, 'broker', {
+        rate_percent: counterRate,
+        broker_note: `Countering at ${counterRate.toFixed(2)}%.`,
+      });
+      toast({
+        title: 'Counter sent to ' + o.label,
+        sub: "You'll be notified when they respond.",
+      });
+      onChanged();
+    } catch (err) {
+      toast({ title: 'Could not send counter', sub: (err as Error).message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const decline = async () => {
+    setBusy('reject');
+    try {
+      await offersService.reject(o.id);
+      toast({
+        title: 'Offer declined',
+        sub: o.label + ' has been removed from this deal.',
+      });
+      onChanged();
+    } catch (err) {
+      toast({ title: 'Could not decline offer', sub: (err as Error).message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const reveal = async () => {
+    if (!o.lenderId) return;
+    setBusy('reveal');
+    try {
+      await dealsService.revealBorrowerTo(dealId, [o.lenderId]);
+      toast({
+        title: 'Borrower details revealed',
+        sub: 'Now visible to ' + o.label + '.',
+      });
+    } catch (err) {
+      toast({ title: 'Could not reveal borrower', sub: (err as Error).message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div
       className="card card-pad"
@@ -212,7 +329,7 @@ function OfferCard({ o, toast }: { o: OfferDisplay; toast: (t: any) => void }) {
       >
         <div>
           <div className="small" style={{ fontWeight: 600, color: 'var(--slate-deep)' }}>
-            Lender {o.id} — Anonymized
+            {o.label} — Anonymized
           </div>
           <div className="micro muted-text">{o.type}</div>
         </div>
@@ -282,38 +399,26 @@ function OfferCard({ o, toast }: { o: OfferDisplay; toast: (t: any) => void }) {
         <button
           className="btn btn-primary btn-sm"
           style={{ flex: 1 }}
-          onClick={() =>
-            toast({
-              title: 'Offer from Lender ' + o.id + ' accepted',
-              sub: 'The lender has been notified. Funding instructions will follow.',
-            })
-          }
+          onClick={accept}
+          disabled={busy !== null}
         >
-          Accept
+          {busy === 'accept' ? 'Accepting…' : 'Accept'}
         </button>
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() =>
-            toast({
-              title: 'Counter sent to Lender ' + o.id,
-              sub: "You'll be notified when they respond.",
-            })
-          }
-        >
-          Counter
+        <button className="btn btn-secondary btn-sm" onClick={counter} disabled={busy !== null}>
+          {busy === 'counter' ? 'Countering…' : 'Counter'}
         </button>
-        <button
-          className="btn btn-danger btn-sm"
-          onClick={() =>
-            toast({
-              title: 'Offer declined',
-              sub: 'Lender ' + o.id + ' has been removed from this deal.',
-            })
-          }
-        >
-          Decline
+        <button className="btn btn-danger btn-sm" onClick={decline} disabled={busy !== null}>
+          {busy === 'reject' ? 'Declining…' : 'Decline'}
         </button>
       </div>
+      <button
+        className="btn btn-tertiary btn-sm"
+        style={{ paddingLeft: 0, marginTop: 12, color: 'var(--text-2)' }}
+        onClick={reveal}
+        disabled={busy !== null}
+      >
+        {busy === 'reveal' ? 'Revealing…' : 'Reveal borrower details to this lender'}
+      </button>
     </div>
   );
 }
