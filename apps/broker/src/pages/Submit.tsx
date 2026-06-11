@@ -52,7 +52,7 @@ export function Submit() {
     const province = parts[parts.length - 1] || 'ON';
     const city = parts[parts.length - 2] || parts[0] || '';
     return {
-      deal_number: '0252',
+      // deal_number omitted — dealsService allocates the next number for the broker.
       city,
       province,
       property_address: address,

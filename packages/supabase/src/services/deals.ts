@@ -31,7 +31,8 @@ export interface DealRow {
 }
 
 export interface DealSubmitInput {
-  deal_number: string;
+  // Optional — when omitted, the service allocates the next number for the broker.
+  deal_number?: string;
   city: string;
   province: string;
   neighbourhood?: string;
@@ -93,12 +94,34 @@ export const dealsService = {
     return (data as DealRow) ?? null;
   },
 
-  async create(brokerId: string, input: DealSubmitInput): Promise<DealRow> {
+  // Next zero-padded 4-digit deal number for a broker (max existing + 1).
+  async nextDealNumber(brokerId: string): Promise<string> {
+    const pad = (n: number) => String(n).padStart(4, '0');
     if (!hasSupabase || !supabase) {
+      const nums = BROKER_MOCK.pipeline
+        .map((d) => parseInt(d.no, 10))
+        .filter((n) => !Number.isNaN(n));
+      return pad((nums.length ? Math.max(...nums) : 250) + 1);
+    }
+    const { data, error } = await supabase
+      .from('deals')
+      .select('deal_number')
+      .eq('broker_id', brokerId);
+    if (error) throw error;
+    const nums = (data ?? [])
+      .map((r) => parseInt(r.deal_number as string, 10))
+      .filter((n) => !Number.isNaN(n));
+    return pad((nums.length ? Math.max(...nums) : 250) + 1);
+  },
+
+  async create(brokerId: string, input: DealSubmitInput): Promise<DealRow> {
+    const { deal_number: provided, ...rest } = input;
+    if (!hasSupabase || !supabase) {
+      const deal_number = provided ?? (await this.nextDealNumber(brokerId));
       return {
-        id: 'mock-' + input.deal_number,
+        id: 'mock-' + deal_number,
         broker_id: brokerId,
-        deal_number: input.deal_number,
+        deal_number,
         city: input.city,
         province: input.province,
         asset_class: input.asset_class,
@@ -111,18 +134,30 @@ export const dealsService = {
         updated_at: new Date().toISOString(),
       } as DealRow;
     }
-    const { data, error } = await supabase
-      .from('deals')
-      .insert({
-        broker_id: brokerId,
-        ...input,
-        status: 'active',
-        submitted_at: new Date().toISOString(),
-      })
-      .select('*')
-      .single();
-    if (error) throw error;
-    return data as DealRow;
+    // Allocate the number and insert. If two submits race onto the same number
+    // (unique violation 23505) and the caller didn't pin one, re-allocate and retry.
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const deal_number = provided ?? (await this.nextDealNumber(brokerId));
+      const { data, error } = await supabase
+        .from('deals')
+        .insert({
+          broker_id: brokerId,
+          deal_number,
+          ...rest,
+          status: 'active',
+          submitted_at: new Date().toISOString(),
+        })
+        .select('*')
+        .single();
+      if (!error) return data as DealRow;
+      if ((error as { code?: string }).code === '23505' && !provided) {
+        lastErr = error;
+        continue;
+      }
+      throw error;
+    }
+    throw lastErr;
   },
 
   async update(id: string, patch: Partial<DealSubmitInput & { status: string }>): Promise<DealRow> {

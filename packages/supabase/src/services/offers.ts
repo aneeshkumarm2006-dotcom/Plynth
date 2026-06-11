@@ -1,5 +1,11 @@
 import { supabase, hasSupabase } from '../client';
 import { BROKER_MOCK } from '@plynth/shared/mock';
+import { timeAgo } from '@plynth/shared/utils';
+
+export interface ActivityEntry {
+  t: string; // relative time label
+  e: string; // event description (counterparties anonymized)
+}
 
 export interface OfferRow {
   id: string;
@@ -153,5 +159,44 @@ export const offersService = {
   async reject(offerId: string): Promise<void> {
     if (!hasSupabase || !supabase) return;
     await supabase.from('offers').update({ status: 'rejected' }).eq('id', offerId);
+  },
+
+  // Activity timeline for a deal, synthesized from its offers + counter history.
+  // Counterparties are anonymized. Newest first.
+  async activityForDeal(dealId: string): Promise<ActivityEntry[]> {
+    if (!hasSupabase || !supabase) return BROKER_MOCK.activity as ActivityEntry[];
+
+    const { data: offers, error } = await supabase
+      .from('offers')
+      .select('id, rate_percent, status, created_at')
+      .eq('deal_id', dealId);
+    if (error) throw error;
+
+    const offerIds = (offers ?? []).map((o) => o.id);
+    let history: any[] = [];
+    if (offerIds.length) {
+      const { data: h } = await supabase
+        .from('offer_history')
+        .select('offer_id, initiated_by, rate_percent, broker_note, created_at')
+        .in('offer_id', offerIds);
+      history = h ?? [];
+    }
+
+    const events: Array<{ ts: string; e: string }> = [];
+    for (const o of offers ?? []) {
+      if (o.status === 'accepted') events.push({ ts: o.created_at, e: 'An offer was accepted and the deal funded.' });
+      events.push({ ts: o.created_at, e: `A lender submitted an offer at ${o.rate_percent}%.` });
+    }
+    for (const h of history) {
+      const who = h.initiated_by === 'broker' ? 'You' : 'A lender';
+      const note = h.broker_note ? ` — “${h.broker_note}”` : '';
+      events.push({
+        ts: h.created_at,
+        e: h.rate_percent != null ? `${who} countered at ${h.rate_percent}%.${note}` : `${who} sent a counter.${note}`,
+      });
+    }
+
+    events.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+    return events.map((x) => ({ t: timeAgo(x.ts), e: x.e }));
   },
 };

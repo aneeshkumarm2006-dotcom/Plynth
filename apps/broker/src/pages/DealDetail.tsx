@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { DealNo, DefList, Pill, SectionDivider } from '@plynth/shared/ui';
+import { DealNo, DefList, Field, Pill, SectionDivider } from '@plynth/shared/ui';
 import { BROKER_MOCK } from '@plynth/shared/mock';
 import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
@@ -9,6 +9,7 @@ import {
   offersService,
   type DealRow,
   type OfferRow,
+  type ActivityEntry,
 } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
 import {
@@ -33,10 +34,22 @@ export function DealDetail() {
     () => dealsService.getById(dealId ?? ''),
     [dealId]
   );
-  const { data: offerRows, loading: offersLoading, refresh } = useAsync<OfferRow[]>(
+  const { data: offerRows, loading: offersLoading, refresh: refreshOffers } = useAsync<OfferRow[]>(
     () => offersService.listForDeal(dealId ?? ''),
     [dealId]
   );
+  const { data: activityRows, refresh: refreshActivity } = useAsync<ActivityEntry[]>(
+    () => offersService.activityForDeal(dealId ?? ''),
+    [dealId]
+  );
+  const refresh = () => {
+    refreshOffers();
+    refreshActivity();
+  };
+  const activity =
+    activityRows && activityRows.length > 0
+      ? activityRows
+      : [{ t: '', e: 'Deal submitted to the marketplace.' }];
 
   const f = BROKER_MOCK.focus;
   // View model: live deal when resolved, editorial fixture as the fallback.
@@ -178,7 +191,7 @@ export function DealDetail() {
                 background: 'var(--border)',
               }}
             />
-            {BROKER_MOCK.activity.map((a, i) => (
+            {activity.map((a, i) => (
               <div key={i} style={{ position: 'relative', paddingBottom: 22 }}>
                 <div
                   style={{
@@ -221,6 +234,9 @@ function OfferCard({
   onAccepted: () => void;
 }) {
   const [busy, setBusy] = useState<null | 'accept' | 'counter' | 'reject' | 'reveal'>(null);
+  const [countering, setCountering] = useState(false);
+  const [counterRate, setCounterRate] = useState(o.rateValue ? o.rateValue.toFixed(2) : '');
+  const [counterNote, setCounterNote] = useState('');
 
   const accept = async () => {
     setBusy('accept');
@@ -238,20 +254,24 @@ function OfferCard({
     }
   };
 
-  const counter = async () => {
+  const sendCounter = async () => {
+    const rate = parseFloat(counterRate);
+    if (!rate || rate <= 0 || rate >= 100) {
+      toast({ title: 'Enter a valid counter rate', sub: 'A percentage between 0 and 100.' });
+      return;
+    }
     setBusy('counter');
     try {
-      // Counter just under the lender's quoted rate. A dedicated counter form is
-      // a follow-up; for now we shave 0.25% off and note it for the lender.
-      const counterRate = Math.max(0, Math.round((o.rateValue - 0.25) * 100) / 100);
       await offersService.counter(o.id, 'broker', {
-        rate_percent: counterRate,
-        broker_note: `Countering at ${counterRate.toFixed(2)}%.`,
+        rate_percent: rate,
+        broker_note: counterNote.trim() || `Countering at ${rate.toFixed(2)}%.`,
       });
       toast({
         title: 'Counter sent to ' + o.label,
         sub: "You'll be notified when they respond.",
       });
+      setCountering(false);
+      setCounterNote('');
       onChanged();
     } catch (err) {
       toast({ title: 'Could not send counter', sub: (err as Error).message });
@@ -404,13 +424,60 @@ function OfferCard({
         >
           {busy === 'accept' ? 'Accepting…' : 'Accept'}
         </button>
-        <button className="btn btn-secondary btn-sm" onClick={counter} disabled={busy !== null}>
-          {busy === 'counter' ? 'Countering…' : 'Counter'}
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => setCountering((c) => !c)}
+          disabled={busy !== null}
+        >
+          {countering ? 'Cancel' : 'Counter'}
         </button>
         <button className="btn btn-danger btn-sm" onClick={decline} disabled={busy !== null}>
           {busy === 'reject' ? 'Declining…' : 'Decline'}
         </button>
       </div>
+      {countering && (
+        <div
+          className="fade-in"
+          style={{
+            marginTop: 14,
+            padding: 16,
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            background: '#FCFAF5',
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 12, alignItems: 'end' }}>
+            <Field label="Counter rate (%)">
+              <input
+                className="input input-num"
+                value={counterRate}
+                onChange={(e) => setCounterRate(e.target.value)}
+                placeholder={o.rateValue ? o.rateValue.toFixed(2) : '9.00'}
+              />
+            </Field>
+            <Field label="Note to lender (optional)">
+              <input
+                className="input"
+                value={counterNote}
+                onChange={(e) => setCounterNote(e.target.value)}
+                placeholder="Add context for your counter…"
+              />
+            </Field>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <button className="btn btn-primary btn-sm" onClick={sendCounter} disabled={busy !== null}>
+              {busy === 'counter' ? 'Sending…' : 'Send counter'}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setCountering(false)}
+              disabled={busy !== null}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       <button
         className="btn btn-tertiary btn-sm"
         style={{ paddingLeft: 0, marginTop: 12, color: 'var(--text-2)' }}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fundingsService, pipelineService } from '@plynth/supabase/services';
+import { fundingsService, pipelineService, dealsService } from '@plynth/supabase/services';
 import { hasSupabase } from '@plynth/supabase/client';
 
 // Under Vitest, VITE_SUPABASE_* env vars are unset, so hasSupabase is false and
@@ -41,6 +41,42 @@ describe('fundingsService.listForLender (mock mode)', () => {
     const a = await fundingsService.listForLender('lender-a');
     const b = await fundingsService.listForLender('lender-b');
     expect(a).toEqual(b);
+  });
+});
+
+describe('dealsService deal-number allocation (mock mode)', () => {
+  it('allocates the next zero-padded 4-digit number after the broker max', async () => {
+    // Mock pipeline tops out at 0251, so the next number is 0252.
+    const next = await dealsService.nextDealNumber('any-broker-id');
+    expect(next).toBe('0252');
+  });
+
+  it('create() without a deal_number auto-allocates one (regression: no hardcoded 0252)', async () => {
+    const deal = await dealsService.create('any-broker-id', {
+      city: 'Toronto',
+      province: 'ON',
+      asset_class: 'Residential 1st',
+      loan_amount_cents: 42500000,
+      ltv: 72,
+      position: 'first',
+      term_months: 12,
+    });
+    expect(deal.deal_number).toMatch(/^\d{4}$/);
+    expect(deal.deal_number).toBe('0252');
+  });
+
+  it('create() honours an explicitly provided deal_number', async () => {
+    const deal = await dealsService.create('any-broker-id', {
+      deal_number: '0299',
+      city: 'Ottawa',
+      province: 'ON',
+      asset_class: 'Residential 1st',
+      loan_amount_cents: 50000000,
+      ltv: 65,
+      position: 'first',
+      term_months: 12,
+    });
+    expect(deal.deal_number).toBe('0299');
   });
 });
 

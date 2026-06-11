@@ -17,6 +17,7 @@ import {
   notificationsService,
   type MatchedDeal,
   type StatBlockData,
+  type LenderSidebar,
 } from '@plynth/supabase/services';
 import { MatchCard } from '../components/MatchCard';
 import { useToastFire } from '../components/ToastContext';
@@ -37,6 +38,11 @@ export function Dashboard() {
 
   const { data: stats } = useAsync<StatBlockData[]>(
     () => analyticsService.lenderStats(profile?.id ?? ''),
+    [profile?.id]
+  );
+
+  const { data: sidebar } = useAsync<LenderSidebar>(
+    () => analyticsService.lenderSidebar(profile?.id ?? ''),
     [profile?.id]
   );
 
@@ -104,19 +110,17 @@ export function Dashboard() {
         </div>
         <aside>
           <SectionDivider n="02" label="Performance" />
-          {/* TODO: Win Rate / Avg Response lack a backing aggregate query —
-              still fixture-backed from LENDER_MOCK.sidebarStats. */}
           <div className="card card-pad" style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <div className="stat-value" style={{ fontSize: 30 }}>
-                  {L.sidebarStats.winRate}
+                  {sidebar?.winRate ?? L.sidebarStats.winRate}
                 </div>
                 <div className="stat-label">Win Rate</div>
               </div>
               <div>
                 <div className="stat-value" style={{ fontSize: 30 }}>
-                  {L.sidebarStats.avgResponse}
+                  {sidebar?.avgResponse ?? L.sidebarStats.avgResponse}
                 </div>
                 <div className="stat-label">Avg Response Time</div>
               </div>
@@ -134,7 +138,7 @@ export function Dashboard() {
               Active criteria
             </div>
             <p className="small" style={{ color: 'var(--slate-deep)', lineHeight: 1.5 }}>
-              {L.sidebarStats.criteria}
+              {sidebar?.criteria ?? L.sidebarStats.criteria}
             </p>
             <button
               className="btn btn-tertiary btn-sm"

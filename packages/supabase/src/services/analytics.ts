@@ -1,5 +1,6 @@
 import { supabase, hasSupabase } from '../client';
 import { LENDER_MOCK, BROKER_MOCK } from '@plynth/shared/mock';
+import { buildCriteriaPreview } from '@plynth/shared/utils';
 
 export interface StatBlockData {
   value: string;
@@ -7,6 +8,12 @@ export interface StatBlockData {
   label: string;
   delta?: string;
   deltaDir?: 'up' | 'down';
+}
+
+export interface LenderSidebar {
+  winRate: string;
+  avgResponse: string;
+  criteria: string;
 }
 
 // Compact CAD for stat headlines: 4_250_000 cents → "$4.2" (+ unit "M").
@@ -65,6 +72,56 @@ export const analyticsService = {
       { value: funded.value, unit: funded.unit, label: 'Funded YTD' },
       { value: String(deployRate), unit: '%', label: 'Deployment Rate' },
     ];
+  },
+
+  // ---- Lender performance sidebar (win rate, avg response, criteria preview) ----
+  async lenderSidebar(lenderId: string): Promise<LenderSidebar> {
+    if (!hasSupabase || !supabase) {
+      return {
+        winRate: LENDER_MOCK.sidebarStats.winRate,
+        avgResponse: LENDER_MOCK.sidebarStats.avgResponse,
+        criteria: LENDER_MOCK.sidebarStats.criteria,
+      };
+    }
+
+    const [offersRes, interRes, critRes] = await Promise.all([
+      supabase.from('offers').select('status, created_at, deal_id').eq('lender_id', lenderId).eq('is_deleted', false),
+      supabase.from('lender_deal_interactions').select('deal_id, matched_at').eq('lender_id', lenderId),
+      supabase
+        .from('lender_criteria')
+        .select('asset_classes, provinces, ltv_max_first_position')
+        .eq('lender_id', lenderId)
+        .maybeSingle(),
+    ]);
+
+    const offers = offersRes.data ?? [];
+    const total = offers.length;
+    const won = offers.filter((o) => o.status === 'accepted').length;
+    const winRate = total > 0 ? Math.round((won / total) * 100) + '%' : '—';
+
+    // Avg response = time from a deal matching the lender to their offer on it.
+    const matchedAt = new Map((interRes.data ?? []).map((r) => [r.deal_id, r.matched_at]));
+    let sumHours = 0;
+    let counted = 0;
+    for (const o of offers) {
+      const m = matchedAt.get(o.deal_id);
+      if (!m) continue;
+      const h = (new Date(o.created_at).getTime() - new Date(m).getTime()) / 3_600_000;
+      if (h >= 0) {
+        sumHours += h;
+        counted++;
+      }
+    }
+    const avgResponse = counted > 0 ? (sumHours / counted).toFixed(1) + ' hrs' : '—';
+
+    const c = critRes.data as
+      | { asset_classes: string[]; provinces: string[]; ltv_max_first_position: number }
+      | null;
+    const criteria = c
+      ? buildCriteriaPreview(c.asset_classes ?? [], c.provinces ?? [], c.ltv_max_first_position, c.ltv_max_first_position)
+      : LENDER_MOCK.sidebarStats.criteria;
+
+    return { winRate, avgResponse, criteria };
   },
 
   // ---- Broker dashboard ----
