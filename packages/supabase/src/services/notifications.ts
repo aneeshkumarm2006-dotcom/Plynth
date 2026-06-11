@@ -1,5 +1,12 @@
 import { supabase, hasSupabase } from '../client';
 
+// Channels must have unique topics: supabase-js keys channels by name and
+// throws if you add `postgres_changes` callbacks to a topic that's already
+// been subscribed. Multiple call sites (bell, dashboard, matched feed) listen
+// for the same user's notifications, and StrictMode double-mounts effects in
+// dev — so every subscribe() gets its own channel name via this counter.
+let channelSeq = 0;
+
 export interface NotificationRow {
   id: string;
   user_id: string;
@@ -42,7 +49,7 @@ export const notificationsService = {
   subscribe(userId: string, onInsert: (n: NotificationRow) => void): () => void {
     if (!hasSupabase || !supabase) return () => {};
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(`notifications:${userId}:${++channelSeq}`)
       .on(
         'postgres_changes',
         {
