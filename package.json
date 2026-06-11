@@ -10,7 +10,9 @@
     "preview": "pnpm -r preview",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check",
-    "test": "pnpm -r test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
     "db:push": "cd supabase && supabase push",
@@ -19,7 +21,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^2.1.8",
     "pg": "^8.11.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.8"
   }
 }

@@ -27,19 +27,24 @@ Phase-by-phase tracker. Status reflects what's actually wired up in the codebase
 
 ---
 
-## Phase 2 — Broker Portal 🟡
+## Phase 2 — Broker Portal ✅
 
-UI is built; data layer is mocked.
+UI built and wired to the service layer (mock fallback identical in mock mode).
 
-- [x] Dashboard (stats, recent activity)
-- [x] Deal submission (multi-step form)
-- [x] Pipeline (filter + sort)
-- [x] Deal detail (offers list, actions)
-- [x] Lenders directory
-- [x] Funded deals page
-- [ ] Replace mock data (`LENDER_MOCK`) with Supabase queries
-- [ ] Wire offer accept / counter actions to backend
-- [ ] Borrower reveal flow (PIPEDA — explicit per-lender reveal)
+- [x] Dashboard — `analyticsService.brokerStats` + `dealsService` + `fundingsService`
+- [x] Deal submission — `dealsService.create` (dollars → cents)
+- [x] Pipeline (filter + sort) — `dealsService.listForBroker`
+- [x] Deal detail — `dealsService.getById` + `offersService.listForDeal`
+- [x] Lenders directory — `lendersService.listDirectory`
+- [x] Funded deals page — `fundingsService.listForBroker`
+- [x] Replace mock data with service-layer queries (+ `apps/broker/src/lib/present.ts`)
+- [x] Wire offer accept / counter / reject to backend (`offersService`)
+- [x] Borrower reveal flow (PIPEDA — per-lender reveal via `dealsService.revealBorrowerTo`)
+
+**Improvised / follow-ups** (see doubts): dashboard focus "quote" + "new offers" column are
+still derived from deal status (no per-deal offer-count aggregate); counter shaves a fixed
+0.25% (no counter form yet); activity timeline still fixture; `deal_number` allocation is
+hardcoded in Submit (needs a sequence service).
 
 ---
 
@@ -68,17 +73,19 @@ against a real Supabase project.
 
 ---
 
-## Phase 4 — Real-Time Matching 🟡
-
-SQL is done; client wiring is not.
+## Phase 4 — Real-Time Matching ✅
 
 - [x] `compute_lender_matches()` Postgres function (migration 0003)
 - [x] Notification triggers (migration 0004)
 - [x] RLS policies (migration 0002)
-- [ ] Trigger match recomputation when lender saves criteria
-- [ ] Supabase Realtime subscription in lender app (new matches, new offers)
-- [ ] Live preview in criteria builder ("would have matched 47 deals…") — client-side heuristic
-- [ ] In-app notification UI + badge
+- [x] Trigger match recomputation when lender saves criteria (`criteriaService.upsert` → RPC)
+- [x] Supabase Realtime subscription (lender Dashboard + Matched refetch on notification insert)
+- [x] Live preview in criteria builder ("would have matched N deals…") — `estimateMatchCount`
+- [x] In-app notification UI + badge (`NotificationBell` wired in both shells)
+- [x] Dashboard analytics aggregation (`analyticsService` — broker + lender stat strips)
+
+**Remaining**: realtime currently refetches on any notification insert (no type filtering);
+Win Rate / Avg Response sidebar stats still fixture-backed (no aggregate query yet).
 
 ---
 
@@ -86,30 +93,37 @@ SQL is done; client wiring is not.
 
 - [x] Password reset (email flow)
 - [x] Settings pages (broker + lender)
-- [ ] Audit log export (CSV/JSON, 7-year retention requirement)
-- [ ] Mobile responsiveness pass (CSS exists, not verified on real devices)
-- [ ] Rate limiting (100 req/min per user — spec'd, not enforced)
+- [x] Audit log export (CSV download in broker Settings via `auditService.toCSV`)
+- [x] Mobile responsiveness pass — sidebar → sticky horizontal nav at ≤768px; stat
+      strips/tables stack. **Not device-verified**, and inline two-column page grids
+      (dashboard/criteria/deal-detail) don't collapse (inline styles beat CSS) — see doubts.
+- [ ] Rate limiting (100 req/min per user) — **must be enforced server-side** (Supabase
+      edge/gateway), not the client. Buttons disable during in-flight submits, but that is
+      not rate limiting. Deferred to backend.
 
 ---
 
-## Phase 6 — Testing ⏳
+## Phase 6 — Testing 🟡
 
-Nothing in place yet.
-
-- [ ] Vitest setup + unit tests (matching score logic, form validation, auth helpers)
+- [x] Vitest setup (root `vitest.config.ts`, `pnpm test`) + 91 unit tests across 4 files:
+      matching heuristic, formatters, validators, present.ts mappers, criteria round-trip,
+      mock-mode service shapes
 - [ ] Cypress E2E (broker signup → submit deal → lender match → offer → accept → fund)
-- [ ] RLS policy tests (isolation between brokers, lender visibility scope)
+- [ ] RLS policy tests (isolation between brokers, lender visibility scope) — needs a live
+      Supabase project
 - [ ] Security audit (XSS, CSRF, input validation at boundaries)
 - [ ] Performance: matching fn on realistic data volume
 
 ---
 
-## Phase 7 — Launch ⏳
+## Phase 7 — Launch 🟡
 
 - [x] `vercel.json` with broker/lender path rewrites
-- [ ] Production Supabase project + env vars in Vercel
+- [x] `.env.example` templates (broker + lender)
+- [x] Deploy runbook (`DEPLOY.md` — provisioning, Vercel, domains, post-deploy checklist)
+- [ ] Production Supabase project + env vars in Vercel  ← **blocked on Supabase URL**
 - [ ] Observability (Sentry or Datadog — error tracking + perf)
-- [ ] Domain setup: `brokers.plynth.ca`, `lenders.plynth.ca`
+- [ ] Domain setup: `brokers.plynth.ca`, `lenders.plynth.ca` (decision in DEPLOY.md §4)
 - [ ] Beta waitlist / invite flow
 - [ ] Runbook for incident response
 
@@ -117,7 +131,10 @@ Nothing in place yet.
 
 ## Immediate next steps
 
-1. Provision real Supabase project; populate env vars.
-2. Replace `LENDER_MOCK` and equivalent broker mocks with live Supabase queries (start with broker dashboard + deal submission).
-3. Wire the criteria-save → match-recompute → realtime-push loop end-to-end on one deal flow.
-4. Add Vitest with one passing test as scaffold before feature work resumes.
+1. **Provision the Supabase project** and populate env vars in both apps + Vercel
+   (everything else runs in mock mode until then — this is the one true blocker).
+2. Run the post-deploy checklist in `DEPLOY.md` against the live project (the first
+   real end-to-end pass: broker submit → lender match → offer → accept → fund).
+3. Close the small follow-ups flagged in Phase 2/4 doubts (counter form, deal-number
+   sequence, notification-type filtering, Win Rate/Avg Response aggregates).
+4. Add Cypress E2E + RLS isolation tests once the live project exists.
