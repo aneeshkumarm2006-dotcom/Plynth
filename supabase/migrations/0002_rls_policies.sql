@@ -76,11 +76,11 @@ CREATE POLICY "lenders_can_create_offers" ON offers
 CREATE POLICY "can_update_own_offer" ON offers
   FOR UPDATE USING (
     lender_id = auth.uid()
-    OR (SELECT broker_id FROM deals WHERE id = offer_id = deals.id) = auth.uid()
+    OR (SELECT broker_id FROM deals WHERE id = offers.deal_id) = auth.uid()
   )
   WITH CHECK (
     lender_id = auth.uid()
-    OR (SELECT broker_id FROM deals WHERE id = offer_id = deals.id) = auth.uid()
+    OR (SELECT broker_id FROM deals WHERE id = offers.deal_id) = auth.uid()
   );
 
 -- ============ Offer History ============

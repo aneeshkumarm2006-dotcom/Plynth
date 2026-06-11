@@ -5,9 +5,15 @@
   "exports": {
     "./types": "./src/types.ts",
     "./utils": "./src/utils/index.ts",
-    "./hooks": "./src/hooks/index.ts"
+    "./hooks": "./src/hooks/index.ts",
+    "./ui": "./src/ui/index.tsx",
+    "./mock": "./src/mock.ts",
+    "./styles": "./src/plynth.css"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   }
 }

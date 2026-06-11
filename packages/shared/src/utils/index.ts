@@ -168,3 +168,39 @@ export function matchScoreLabel(score: number): string {
   if (score >= 30) return 'Fair';
   return 'Poor';
 }
+
+// ============ Live preview match estimate ============
+// Heuristic — mirrors the server-side compute_lender_matches() scoring weights.
+// Used in the criteria builder for instant feedback as the user adjusts sliders.
+
+export interface CriteriaShape {
+  assets: string[];
+  provinces: string[];
+  loanMin: number;
+  loanMax: number;
+  ltv1: number;
+  beacon: number;
+  bfs: boolean;
+  exclusions: string[];
+}
+
+export function estimateMatchCount(c: CriteriaShape): number {
+  let n = 2;
+  n += c.assets.length * 7;
+  n += c.provinces.length * 5.5;
+  n += ((c.loanMax - c.loanMin) / 100000) * 0.4;
+  n += Math.max(0, c.ltv1 - 60) * 0.55;
+  n += Math.max(0, 700 - c.beacon) * 0.12;
+  n += c.bfs ? 2 : 0;
+  n -= c.exclusions.length * 1.5;
+  return Math.max(0, Math.round(n));
+}
+
+export function formatMoneyShort(n: number): string {
+  return (
+    '$' +
+    (n >= 1_000_000
+      ? (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 2) + 'M'
+      : (n / 1000).toFixed(0) + 'K')
+  );
+}

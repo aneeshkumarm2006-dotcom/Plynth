@@ -4,12 +4,16 @@
   "type": "module",
   "exports": {
     "./client": "./src/client.ts",
-    "./migrations": "./src/migrations.ts"
+    "./auth": "./src/auth.ts",
+    "./services": "./src/services/index.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   }
 }

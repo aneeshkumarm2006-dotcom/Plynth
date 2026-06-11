@@ -19,7 +19,7 @@ CREATE TYPE subscription_tier AS ENUM ('startup', 'professional', 'institutional
 
 CREATE TYPE subscription_status AS ENUM ('active', 'paused', 'cancelled');
 
-CREATE TYPE position AS ENUM ('first', 'second', 'third+');
+CREATE TYPE loan_position AS ENUM ('first', 'second', 'third+');
 
 CREATE TYPE property_type AS ENUM ('residential', 'commercial', 'land', 'multi-residential');
 
@@ -94,7 +94,7 @@ CREATE TABLE deals (
   loan_amount_cents BIGINT NOT NULL,
   estimated_value_cents BIGINT,
   ltv DECIMAL(5,2) NOT NULL,
-  position position NOT NULL,
+  position loan_position NOT NULL,
 
   -- Terms
   term_months INT NOT NULL,

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm install --frozen-lockfile && pnpm -r build && rm -rf dist-vercel && mkdir -p dist-vercel && cp -r apps/broker/dist dist-vercel/broker && cp -r apps/lender/dist dist-vercel/lender && cp public/index.html dist-vercel/index.html",
+  "installCommand": "echo 'install handled in buildCommand'",
+  "outputDirectory": "dist-vercel",
+  "rewrites": [
+    { "source": "/broker/:path*", "destination": "/broker/index.html" },
+    { "source": "/lender/:path*", "destination": "/lender/index.html" }
+  ]
+}

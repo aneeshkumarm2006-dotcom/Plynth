@@ -11,12 +11,15 @@
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check",
     "test": "pnpm -r test",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs",
     "db:push": "cd supabase && supabase push",
     "db:pull": "cd supabase && supabase pull",
     "db:reset": "cd supabase && supabase db reset"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "pg": "^8.11.3",
     "typescript": "^5.3.3"
   }
 }
