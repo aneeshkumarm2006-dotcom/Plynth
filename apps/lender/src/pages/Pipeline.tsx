@@ -1,12 +1,27 @@
 import { useNavigate } from 'react-router-dom';
 import { DealNo } from '@plynth/shared/ui';
-import { LENDER_MOCK } from '@plynth/shared/mock';
+import { useAsync } from '@plynth/shared/hooks';
+import { useAuth } from '@plynth/supabase/auth';
+import { pipelineService, type PipelineColumns } from '@plynth/supabase/services';
 
 const COLS = ['Reviewing', 'Offered', 'In Negotiation', 'Funded', 'Dead'] as const;
 
+const EMPTY_COLS: PipelineColumns = {
+  Reviewing: [],
+  Offered: [],
+  'In Negotiation': [],
+  Funded: [],
+  Dead: [],
+};
+
 export function Pipeline() {
   const navigate = useNavigate();
-  const pipeline = LENDER_MOCK.pipeline;
+  const { profile } = useAuth();
+  const { data } = useAsync<PipelineColumns>(
+    () => pipelineService.forLender(profile?.id ?? ''),
+    [profile?.id]
+  );
+  const pipeline = data ?? EMPTY_COLS;
 
   return (
     <div className="page page-wide">
@@ -58,7 +73,7 @@ export function Pipeline() {
                     key={d.no}
                     className="card card-hover"
                     style={{ padding: 16, cursor: 'pointer' }}
-                    onClick={() => navigate(`/deals/${d.no}`)}
+                    onClick={() => navigate(`/deals/${d.deal_id}`)}
                   >
                     <div
                       style={{

@@ -21,13 +21,17 @@ export function MatchCard({
   d,
   onToast,
   dense,
+  dealId,
 }: {
   d: MatchCardData;
   onToast: (t: ToastSpec) => void;
   dense?: boolean;
+  // Identifier used for routing — a deal UUID in live mode, the deal number in mock.
+  dealId?: string;
 }) {
   const [acted, setActed] = useState<null | 'interested' | 'pass'>(null);
   const navigate = useNavigate();
+  const target = dealId ?? d.no;
   return (
     <div
       className="card card-hover"
@@ -122,7 +126,7 @@ export function MatchCard({
       >
         <button
           className="btn btn-primary btn-sm"
-          onClick={() => navigate(`/deals/${d.no}`)}
+          onClick={() => navigate(`/deals/${target}`)}
         >
           Make offer
         </button>
@@ -150,7 +154,7 @@ export function MatchCard({
         <div style={{ flex: 1 }} />
         <button
           className="btn btn-tertiary btn-sm"
-          onClick={() => navigate(`/deals/${d.no}`)}
+          onClick={() => navigate(`/deals/${target}`)}
         >
           Details ›
         </button>

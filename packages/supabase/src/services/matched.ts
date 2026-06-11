@@ -16,6 +16,11 @@ export interface MatchedDeal {
   match_score: number;
   matched_at: string;
   views_count?: number;
+  // Editorial summary + relative age. In live mode `summary` falls back to the
+  // broker's notes and `age` is derived from `matched_at`; in mock mode both
+  // come straight from the fixture so the feed reads identically.
+  summary?: string | null;
+  age?: string | null;
 }
 
 export const matchedService = {
@@ -35,6 +40,8 @@ export const matchedService = {
         match_score: m.score,
         matched_at: new Date().toISOString(),
         views_count: 0,
+        summary: m.summary,
+        age: m.age,
       }));
     }
     const { data, error } = await supabase
@@ -43,7 +50,7 @@ export const matchedService = {
         `id, match_score, matched_at, views_count,
          deals!inner (
            id, deal_number, city, province, neighbourhood, asset_class,
-           loan_amount_cents, ltv, position, term_months, status
+           loan_amount_cents, ltv, position, term_months, status, notes
          )`
       )
       .eq('lender_id', lenderId)
@@ -64,7 +71,14 @@ export const matchedService = {
       match_score: row.match_score,
       matched_at: row.matched_at,
       views_count: row.views_count,
+      summary: row.deals.notes,
+      age: null,
     }));
+  },
+
+  async getForLender(lenderId: string, dealId: string): Promise<MatchedDeal | null> {
+    const all = await this.listForLender(lenderId);
+    return all.find((d) => d.deal_id === dealId || d.deal_number === dealId) ?? null;
   },
 
   async recordView(lenderId: string, dealId: string): Promise<void> {

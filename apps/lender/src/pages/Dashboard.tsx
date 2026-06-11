@@ -5,18 +5,35 @@ import {
   MatchBar,
   SectionDivider,
   StatStrip,
+  EmptyState,
 } from '@plynth/shared/ui';
 import { LENDER_MOCK } from '@plynth/shared/mock';
+import { useAsync } from '@plynth/shared/hooks';
+import { useAuth } from '@plynth/supabase/auth';
+import { matchedService, type MatchedDeal } from '@plynth/supabase/services';
 import { MatchCard } from '../components/MatchCard';
 import { useToastFire } from '../components/ToastContext';
+import { matchedToCard, cityProvince, dollars, ltvPct, termLabel, positionLabel } from '../lib/present';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const toast = useToastFire();
+  const { profile } = useAuth();
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const first = LENDER_MOCK.user.name.split(' ')[0];
+  const first = (profile?.first_name ?? LENDER_MOCK.user.name).split(' ')[0];
+
+  const { data: matched, loading } = useAsync<MatchedDeal[]>(
+    () => matchedService.listForLender(profile?.id ?? ''),
+    [profile?.id]
+  );
+
+  // Stats + performance remain fixture-backed pending an analytics endpoint
+  // (Funded YTD / Deployment Rate / Win Rate need aggregate queries — Phase 4).
   const L = LENDER_MOCK;
+  const rows = matched ?? [];
+  const focus = rows[0] ?? null;
+  const newMatchCount = rows.length;
 
   return (
     <div className="page page-wide">
@@ -25,27 +42,39 @@ export function Dashboard() {
           {greet}, {first}
         </h1>
         <p className="lead" style={{ marginTop: 8, fontSize: 17 }}>
-          Nine new deals match your criteria. Four arrived today.
+          {newMatchCount > 0
+            ? `${newMatchCount} ${newMatchCount === 1 ? 'deal matches' : 'deals match'} your criteria.`
+            : 'No new matches yet — adjust your criteria to widen the funnel.'}
         </p>
       </div>
       <div style={{ marginBottom: 32 }}>
         <StatStrip stats={L.stats} />
       </div>
-      <div style={{ marginBottom: 44 }}>
-        <LenderFocus onOpen={(no) => navigate(`/deals/${no}`)} />
-      </div>
+      {focus && (
+        <div style={{ marginBottom: 44 }}>
+          <LenderFocus deal={focus} onOpen={(id) => navigate(`/deals/${id}`)} />
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 40 }}>
         <div>
-          <SectionDivider
-            n="01"
-            label="Today's matches"
-            meta={L.matched.length + ' deals'}
-          />
+          <SectionDivider n="01" label="Today's matches" meta={rows.length + ' deals'} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {L.matched.slice(0, 3).map((d) => (
-              <MatchCard key={d.no} d={d} onToast={toast} dense />
-            ))}
+            {loading && rows.length === 0 ? (
+              <>
+                <div className="skel" style={{ height: 120, borderRadius: 8 }} />
+                <div className="skel" style={{ height: 120, borderRadius: 8 }} />
+              </>
+            ) : rows.length === 0 ? (
+              <EmptyState
+                title="No matched deals yet"
+                sub="When a broker submits a deal that fits your criteria, it appears here."
+              />
+            ) : (
+              rows.slice(0, 3).map((d) => (
+                <MatchCard key={d.deal_id} d={matchedToCard(d)} dealId={d.deal_id} onToast={toast} dense />
+              ))
+            )}
           </div>
           <button
             className="btn btn-ghost btn-block"
@@ -101,8 +130,9 @@ export function Dashboard() {
   );
 }
 
-function LenderFocus({ onOpen }: { onOpen: (no: string) => void }) {
-  const f = LENDER_MOCK.focus;
+function LenderFocus({ deal, onOpen }: { deal: MatchedDeal; onOpen: (id: string) => void }) {
+  const amount = dollars(deal.loan_amount_cents);
+  const quote = deal.summary ?? 'A strong match against your active criteria, ready for an offer.';
   return (
     <div className="card fade-in" style={{ overflow: 'hidden' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', minHeight: 300 }}>
@@ -112,8 +142,8 @@ function LenderFocus({ onOpen }: { onOpen: (no: string) => void }) {
               Strongest match today
             </span>
             <span style={{ width: 1, height: 12, background: 'var(--border)' }} />
-            <DealNo n={f.no} />
-            <MatchBar score={f.score} width={90} />
+            <DealNo n={deal.deal_number} />
+            <MatchBar score={deal.match_score} width={90} />
           </div>
           <blockquote
             style={{
@@ -127,13 +157,13 @@ function LenderFocus({ onOpen }: { onOpen: (no: string) => void }) {
               flex: 1,
             }}
           >
-            “{f.quote}”
+            “{quote}”
           </blockquote>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 32 }}>
-            <button className="btn btn-primary" onClick={() => onOpen(f.no)}>
+            <button className="btn btn-primary" onClick={() => onOpen(deal.deal_id)}>
               Make an offer
             </button>
-            <button className="btn btn-ghost" onClick={() => onOpen(f.no)}>
+            <button className="btn btn-ghost" onClick={() => onOpen(deal.deal_id)}>
               View deal
             </button>
           </div>
@@ -157,7 +187,8 @@ function LenderFocus({ onOpen }: { onOpen: (no: string) => void }) {
               marginBottom: 6,
             }}
           >
-            {f.neighbourhood} · {f.city}
+            {deal.neighbourhood ? `${deal.neighbourhood} · ` : ''}
+            {cityProvince(deal.city, deal.province)}
           </div>
           <div
             className="tnum"
@@ -170,15 +201,14 @@ function LenderFocus({ onOpen }: { onOpen: (no: string) => void }) {
               lineHeight: 1,
             }}
           >
-            {f.amount}{' '}
-            <span style={{ fontSize: 15, color: 'var(--text-2)' }}>CAD</span>
+            {amount} <span style={{ fontSize: 15, color: 'var(--text-2)' }}>CAD</span>
           </div>
           <DefList
             style={{ marginTop: 22 }}
             items={[
-              ['Position', f.position],
-              ['LTV', f.ltv],
-              ['Term', f.term],
+              ['Position', positionLabel(deal.position)],
+              ['LTV', ltvPct(deal.ltv)],
+              ['Term', termLabel(deal.term_months)],
             ]}
           />
         </div>

@@ -1,7 +1,25 @@
-import { StatBlock } from '@plynth/shared/ui';
-import { LENDER_MOCK } from '@plynth/shared/mock';
+import { StatBlock, EmptyState } from '@plynth/shared/ui';
+import { useAsync } from '@plynth/shared/hooks';
+import { useAuth } from '@plynth/supabase/auth';
+import { fundingsService, type FundingRow } from '@plynth/supabase/services';
+import { fundingToRow } from '../lib/present';
 
 export function Funded() {
+  const { profile } = useAuth();
+  const { data, loading } = useAsync<FundingRow[]>(
+    () => fundingsService.listForLender(profile?.id ?? ''),
+    [profile?.id]
+  );
+  const rows = (data ?? []).map(fundingToRow);
+
+  // Headline figures derived from the funded set; YTD volume sums loan amounts.
+  const ytdCents = (data ?? []).reduce((sum, f) => sum + f.loan_amount_cents, 0);
+  const ytdLabel = '$' + (ytdCents / 100_000_000).toFixed(1);
+  const avgRate =
+    rows.length > 0
+      ? ((data ?? []).reduce((s, f) => s + f.actual_rate_percent, 0) / rows.length).toFixed(1)
+      : '—';
+
   return (
     <div className="page page-wide">
       <div style={{ marginBottom: 28 }}>
@@ -14,10 +32,18 @@ export function Funded() {
         className="stat-strip"
         style={{ marginBottom: 28, gridTemplateColumns: 'repeat(3,1fr)' }}
       >
-        <StatBlock value="$22.4" unit="M" label="Funded YTD" />
+        <StatBlock value={ytdLabel} unit="M" label="Funded YTD" />
         <StatBlock value="31" unit="%" label="Win Rate" />
-        <StatBlock value="9.0" unit="%" label="Avg Funded Rate" />
+        <StatBlock value={avgRate} unit="%" label="Avg Funded Rate" />
       </div>
+      {loading && rows.length === 0 ? (
+        <div className="skel" style={{ height: 280, borderRadius: 8 }} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No funded deals yet"
+          sub="Deals you fund through Plynth will be recorded here with their final terms."
+        />
+      ) : (
       <div className="card" style={{ overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -43,12 +69,11 @@ export function Funded() {
             </tr>
           </thead>
           <tbody>
-            {LENDER_MOCK.funded.map((d, i) => (
+            {rows.map((d, i) => (
               <tr
                 key={d.no}
                 style={{
-                  borderBottom:
-                    i < LENDER_MOCK.funded.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none',
                 }}
               >
                 <td style={{ padding: '16px 18px' }}>
@@ -100,7 +125,7 @@ export function Funded() {
                   {d.term}
                 </td>
                 <td style={{ padding: '16px 18px', fontSize: 13, color: 'var(--text-2)' }}>
-                  {d.broker}
+                  {d.counterparty}
                 </td>
                 <td
                   className="num"
@@ -113,6 +138,7 @@ export function Funded() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
