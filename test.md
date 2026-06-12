@@ -197,6 +197,23 @@ These are not built yet; add tests when they land:
 
 ---
 
+## 9b. Admin portal (`apps/admin`) — ☐ NEW
+
+Third portal for the Plynth team. Role-gated; reads across all tenants. DB layer
+(`0007` role + `0008` RLS/RPCs) **must be applied + an admin user seeded** before
+live testing (`scripts/apply-admin-migrations.mjs`, `scripts/seed-admin.mjs`).
+Login: `admin@plynth.test` / `TestAdmin2026!`.
+
+- ☐ `[sec]` ⚠️ **Privilege-escalation guard** — a broker/lender CANNOT update their own `role`/`is_verified`/`verification_status` (trigger `user_profiles_block_escalation`). Test: as broker, attempt `update user_profiles set role='admin'` → rejected.
+- ☐ `[sec]` Non-admin hitting `/admin`: app shows "Not authorized" (role gate); and every admin RPC `RAISE`s 'admin only' / admin SELECT policies return 0 rows for non-admins.
+- ☐ `[sec]` ⚠️ `admin_user_directory()` is the ONLY reader of `auth.users` — confirm it's admin-gated, `REVOKE`d from PUBLIC, and column-whitelisted (only `last_sign_in_at`/`email_confirmed_at`).
+- ☐ `[int]` As admin: Overview metrics (`admin_metrics` jsonb) match DB counts; signup/funding series populate; Users directory shows all users + last sign-in; Activity feed shows marketplace-wide audit incl. `session.login`; Deals/Offers monitors list all.
+- ☐ `[int]` `setVerification` (RPC `admin_set_verification`) flips a user's status + writes an `admin.set_verification` audit row.
+- ☐ `[int]` `session.login` trigger on `auth.users` writes an audit row on sign-in (appears in Activity).
+- ☐ ⚠️ Apply caveat: `0007` must run **outside a transaction** (use `scripts/apply-admin-migrations.mjs`, NOT `migrate.mjs` which wraps in BEGIN/COMMIT).
+- ☐ `[manual]` Admin UI: role/verification pills correct tones; Overview bar charts; tables tabular/aligned; activity timeline. Builds clean (tsc + vite).
+- ☐ PIPEDA: borrower PII must stay out of admin list views; reveal (if added) should be audited — confirm no `borrower_name`/`beacon_score` leaks into Users/Deals lists.
+
 ## 9. Cross-cutting `[manual]`
 
 - ☐ Mobile: sidebar → horizontal nav at ≤768px; stat strips/tables stack. ⚠️ Inline two-column page grids (dashboard/criteria/deal-detail) do NOT collapse — known limitation, verify it's tolerable.
