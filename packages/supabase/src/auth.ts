@@ -9,7 +9,7 @@ import { createElement } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, hasSupabase } from './client';
 
-export type UserRole = 'broker' | 'lender';
+export type UserRole = 'broker' | 'lender' | 'admin';
 
 export interface UserProfile {
   id: string;
@@ -79,6 +79,15 @@ const MOCK_USERS: Record<UserRole, UserProfile> = {
     role: 'lender',
     email: 'eleanor@fortressmic.ca',
     firm_name: 'Fortress MIC',
+    is_verified: true,
+    verification_status: 'approved',
+  },
+  admin: {
+    id: 'mock-admin-id',
+    role: 'admin',
+    email: 'admin@plynth.ca',
+    first_name: 'Plynth',
+    last_name: 'Operations',
     is_verified: true,
     verification_status: 'approved',
   },

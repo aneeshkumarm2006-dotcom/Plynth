@@ -6,5 +6,6 @@ export * from './fundings';
 export * from './pipeline';
 export * from './analytics';
 export * from './lenders';
+export * from './admin';
 export * from './notifications';
 export * from './audit';

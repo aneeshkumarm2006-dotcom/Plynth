@@ -288,3 +288,59 @@ export const CITIES_BY_PROVINCE: Record<string, string[]> = {
   NS: ['Halifax', 'Dartmouth'],
   NB: ['Moncton', 'Fredericton'],
 };
+
+// ============ Admin portal mock ============
+// Mirrors what the admin RPCs/queries return; used in mock mode + as the
+// adminService fallback so the admin app builds without a backend.
+export const ADMIN_MOCK = {
+  metrics: {
+    brokers: 14,
+    lenders: 9,
+    signupsThisWeek: 3,
+    activeDeals: 27,
+    liveOffers: 11,
+    fundings: 18,
+    fundedVolumeCents: 4_268_000_000, // $42.68M
+    weeklyActiveUsers: 16,
+  },
+
+  users: [
+    { id: '11111111-1111-1111-1111-111111111111', role: 'broker' as const, name: 'Marcus Chen', firm: 'Northbridge Mortgage Partners', email: 'broker@plynth.test', isVerified: true, verificationStatus: 'approved' as const, lastSignInAt: '2026-06-12T08:14:00Z', createdAt: '2026-05-02T00:00:00Z', dealsCount: 7, offersCount: 0 },
+    { id: '22222222-2222-2222-2222-222222222222', role: 'lender' as const, name: 'Eleanor Whitfield', firm: 'Fortress MIC', email: 'lender@plynth.test', isVerified: true, verificationStatus: 'approved' as const, lastSignInAt: '2026-06-12T07:51:00Z', createdAt: '2026-05-04T00:00:00Z', dealsCount: 0, offersCount: 5 },
+    { id: 'a3000000-0000-0000-0000-000000000001', role: 'broker' as const, name: 'Priya Anand', firm: 'Cedarline Capital', email: 'priya@cedarline.ca', isVerified: false, verificationStatus: 'pending' as const, lastSignInAt: '2026-06-11T16:30:00Z', createdAt: '2026-06-10T00:00:00Z', dealsCount: 2, offersCount: 0 },
+    { id: 'a3000000-0000-0000-0000-000000000002', role: 'lender' as const, name: 'David Okonkwo', firm: 'Bridgewater Funds', email: 'david@bridgewater.ca', isVerified: true, verificationStatus: 'approved' as const, lastSignInAt: '2026-06-09T11:02:00Z', createdAt: '2026-05-19T00:00:00Z', dealsCount: 0, offersCount: 3 },
+    { id: 'a3000000-0000-0000-0000-000000000003', role: 'broker' as const, name: 'Sophie Tremblay', firm: 'Rive-Sud Hypothèques', email: 'sophie@rivesud.ca', isVerified: false, verificationStatus: 'rejected' as const, lastSignInAt: null, createdAt: '2026-06-08T00:00:00Z', dealsCount: 0, offersCount: 0 },
+  ],
+
+  activity: [
+    { id: 1208, createdAt: '2026-06-12T08:14:00Z', actorId: '11111111-1111-1111-1111-111111111111', actorName: 'Northbridge Mortgage Partners', action: 'session.login', entityType: null, entityId: null, ip: '198.51.100.20', userAgent: 'Chrome 126' },
+    { id: 1207, createdAt: '2026-06-12T07:55:00Z', actorId: '22222222-2222-2222-2222-222222222222', actorName: 'Fortress MIC', action: 'offer.created', entityType: 'offer', entityId: '0247', ip: '203.0.113.8', userAgent: 'Safari 17' },
+    { id: 1206, createdAt: '2026-06-11T21:40:00Z', actorId: '11111111-1111-1111-1111-111111111111', actorName: 'Northbridge Mortgage Partners', action: 'deal.created', entityType: 'deal', entityId: '0251', ip: '198.51.100.20', userAgent: 'Chrome 126' },
+    { id: 1205, createdAt: '2026-06-11T18:03:00Z', actorId: '22222222-2222-2222-2222-222222222222', actorName: 'Fortress MIC', action: 'deal.status_changed', entityType: 'deal', entityId: '0236', ip: '203.0.113.8', userAgent: 'Safari 17' },
+    { id: 1204, createdAt: '2026-06-11T16:30:00Z', actorId: 'a3000000-0000-0000-0000-000000000001', actorName: 'Cedarline Capital', action: 'session.login', entityType: null, entityId: null, ip: '192.0.2.55', userAgent: 'Firefox 127' },
+  ],
+
+  signupSeries: [
+    { bucket: 'May 12', value: 2 }, { bucket: 'May 19', value: 4 }, { bucket: 'May 26', value: 3 },
+    { bucket: 'Jun 2', value: 5 }, { bucket: 'Jun 9', value: 3 },
+  ],
+
+  fundingSeries: [
+    { bucket: 'Feb', value: 540_000_000 }, { bucket: 'Mar', value: 720_000_000 },
+    { bucket: 'Apr', value: 980_000_000 }, { bucket: 'May', value: 1_240_000_000 },
+    { bucket: 'Jun', value: 788_000_000 },
+  ],
+
+  deals: [
+    { deal_number: '0247', brokerFirm: 'Northbridge Mortgage Partners', city: 'Toronto, ON', amount_cents: 42_500_000, ltv: 72.0, status: 'offer', offers: 1, created_at: '2026-06-09T00:00:00Z' },
+    { deal_number: '0251', brokerFirm: 'Northbridge Mortgage Partners', city: 'Ottawa, ON', amount_cents: 68_000_000, ltv: 65.0, status: 'offer', offers: 1, created_at: '2026-06-10T00:00:00Z' },
+    { deal_number: '0236', brokerFirm: 'Northbridge Mortgage Partners', city: 'London, ON', amount_cents: 31_200_000, ltv: 80.0, status: 'negotiating', offers: 1, created_at: '2026-06-07T00:00:00Z' },
+    { deal_number: '0239', brokerFirm: 'Northbridge Mortgage Partners', city: 'Calgary, AB', amount_cents: 340_000_000, ltv: 60.0, status: 'active', offers: 0, created_at: '2026-06-06T00:00:00Z' },
+  ],
+
+  offers: [
+    { deal_number: '0247', lenderFirm: 'Fortress MIC', rate: 9.25, lenderFee: 2.0, status: 'submitted', expires_at: '2026-06-15T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
+    { deal_number: '0251', lenderFirm: 'Fortress MIC', rate: 8.95, lenderFee: 1.5, status: 'submitted', expires_at: '2026-06-17T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
+    { deal_number: '0236', lenderFirm: 'Fortress MIC', rate: 10.5, lenderFee: 2.5, status: 'countered', expires_at: '2026-06-14T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
+  ],
+};
