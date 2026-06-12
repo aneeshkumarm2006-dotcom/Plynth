@@ -180,7 +180,10 @@ export interface OfferDisplay {
   rateValue: number; // numeric rate for counter math
   lenderFee: string;
   brokerFee: string;
+  lenderFeeValue: number; // numeric, for effective-cost math
+  brokerFeeValue: number;
   term: string;
+  termMonthsValue: number;
   conditions: string;
   expires: string;
   note?: string;
@@ -208,7 +211,10 @@ export function offerToCard(o: OfferLike, index: number): OfferDisplay {
       rateValue: parseFloat(o.rate ?? '0'),
       lenderFee: o.lenderFee ?? '',
       brokerFee: o.brokerFee ?? '',
+      lenderFeeValue: parseFloat(o.lenderFee ?? '0') || 0,
+      brokerFeeValue: parseFloat(o.brokerFee ?? '0') || 0,
       term: o.term ?? '',
+      termMonthsValue: parseInt(o.term ?? '12', 10) || 12,
       conditions: o.conditions ?? '',
       expires: o.expires ?? '',
       note: o.note,
@@ -225,7 +231,10 @@ export function offerToCard(o: OfferLike, index: number): OfferDisplay {
     rateValue: o.rate_percent,
     lenderFee: o.lender_fee_percent != null ? rateLabel(o.lender_fee_percent) : '—',
     brokerFee: o.broker_fee_percent != null ? rateLabel(o.broker_fee_percent) : '—',
+    lenderFeeValue: o.lender_fee_percent ?? 0,
+    brokerFeeValue: o.broker_fee_percent ?? 0,
     term: o.term_months != null ? termLabel(o.term_months) : '—',
+    termMonthsValue: o.term_months ?? 12,
     conditions: o.conditions_text ?? '—',
     expires: expiresLabel(o.expires_at),
     note: undefined,

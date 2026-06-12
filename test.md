@@ -133,6 +133,7 @@ never been exercised end to end.**
 - ☐ Facts now read real columns (property type, appraised value, beacon band, rate) — verify they reflect the actual deal, not the old `$590,000`/`680–720` literals.
 - ☐ Lender "Why this matched" computed factors match the deal vs the lender's criteria (✓/✕ correct).
 - ☐ Offer cards: accept/counter/decline busy states + error toasts; "Leading offer" badge on best.
+- ☐ `[unit]` `effectiveAnnualCost(rate, lenderFee, brokerFee, term)` = rate + fees annualized over term (✅ unit-tested). Verify the broker offer card shows "Effective annual cost" and flags the **lowest true cost** offer — which can differ from the lowest rate (the point of the feature).
 - ☐ Borrower reveal button calls `revealBorrowerTo`. ⚠️ See §6 — reveal is **not yet enforced** (lender can read borrower fields regardless); display-only today.
 
 ### 4.6 Analytics / dashboards — ☐

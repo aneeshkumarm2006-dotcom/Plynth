@@ -169,6 +169,23 @@ export function matchScoreLabel(score: number): string {
   return 'Poor';
 }
 
+// ============ Offer effective cost ============
+// Approximate APR-equivalent for comparing offers: the nominal rate plus the
+// one-time fees (lender + broker, as % of loan) annualized over the term. A
+// shorter term spreads the same fee over fewer months, so it costs more per
+// year — which is exactly what makes a low-rate, high-fee, short-term offer
+// more expensive than its headline rate suggests.
+export function effectiveAnnualCost(
+  ratePct: number,
+  lenderFeePct = 0,
+  brokerFeePct = 0,
+  termMonths = 12
+): number {
+  const fees = (lenderFeePct || 0) + (brokerFeePct || 0);
+  const annualizedFees = termMonths > 0 ? fees * (12 / termMonths) : fees;
+  return ratePct + annualizedFees;
+}
+
 // ============ Live preview match estimate ============
 // Heuristic — mirrors the server-side compute_lender_matches() scoring weights.
 // Used in the criteria builder for instant feedback as the user adjusts sliders.

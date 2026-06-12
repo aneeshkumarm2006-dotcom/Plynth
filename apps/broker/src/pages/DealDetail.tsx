@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DealNo, DefList, Field, Pill, SectionDivider } from '@plynth/shared/ui';
+import { effectiveAnnualCost } from '@plynth/shared/utils';
 import { BROKER_MOCK } from '@plynth/shared/mock';
 import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
@@ -83,6 +84,12 @@ export function DealDetail() {
   const actionDealId = deal?.id ?? dealId ?? f.no;
 
   const offers = (offerRows ?? []).map((o, i) => offerToCard(o, i));
+  // Effective annual cost (rate + annualized fees) to compare offers on true cost,
+  // not just headline rate. Flag the genuinely cheapest when there's more than one.
+  const offerCosts = offers.map((o) =>
+    effectiveAnnualCost(o.rateValue, o.lenderFeeValue, o.brokerFeeValue, o.termMonthsValue)
+  );
+  const minCost = offerCosts.length > 1 ? Math.min(...offerCosts) : null;
 
   const submitDraft = async () => {
     setSubmittingDraft(true);
@@ -219,10 +226,12 @@ export function DealDetail() {
                 <div className="skel" style={{ height: 220, borderRadius: 8 }} />
               </>
             ) : (
-              offers.map((o) => (
+              offers.map((o, i) => (
                 <OfferCard
                   key={o.id}
                   o={o}
+                  effCost={offerCosts[i]}
+                  isLowestCost={minCost != null && offerCosts[i] === minCost}
                   dealId={actionDealId}
                   toast={toast}
                   onChanged={refresh}
@@ -277,12 +286,16 @@ export function DealDetail() {
 
 function OfferCard({
   o,
+  effCost,
+  isLowestCost,
   dealId,
   toast,
   onChanged,
   onAccepted,
 }: {
   o: OfferDisplay;
+  effCost: number;
+  isLowestCost: boolean;
   dealId: string;
   toast: ToastFn;
   onChanged: () => void;
@@ -451,6 +464,48 @@ function OfferCard({
             </div>
           </div>
         ))}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          marginBottom: 16,
+          borderRadius: 6,
+          background: isLowestCost ? 'rgba(124,152,133,0.12)' : '#FCFAF5',
+          border: '1px solid ' + (isLowestCost ? 'var(--sage)' : 'var(--border)'),
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="micro muted-text" title="Rate plus fees annualized over the term">
+            Effective annual cost
+          </span>
+          {isLowestCost && (
+            <span
+              className="micro"
+              style={{
+                color: 'var(--sage)',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Lowest true cost
+            </span>
+          )}
+        </div>
+        <span
+          className="num"
+          style={{
+            fontFamily: 'var(--serif)',
+            fontSize: 18,
+            fontWeight: 600,
+            color: isLowestCost ? 'var(--sage)' : 'var(--slate-deep)',
+          }}
+        >
+          {effCost.toFixed(2)}%
+        </span>
       </div>
       <div style={{ marginBottom: 14 }}>
         <span className="micro muted-text">Conditions · </span>

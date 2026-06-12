@@ -15,8 +15,27 @@ import {
   buildCriteriaPreview,
   timeAgo,
   estimateMatchCount,
+  effectiveAnnualCost,
   type CriteriaShape,
 } from '@plynth/shared/utils';
+
+describe('effectiveAnnualCost', () => {
+  it('adds full fees when the term is 12 months', () => {
+    expect(effectiveAnnualCost(9.25, 2.0, 1.0, 12)).toBeCloseTo(12.25, 5);
+  });
+  it('annualizes (halves) fees over a 24-month term', () => {
+    expect(effectiveAnnualCost(9.25, 2.0, 1.0, 24)).toBeCloseTo(10.75, 5);
+  });
+  it('exposes that a lower headline rate can cost more', () => {
+    const lowRateHighFee = effectiveAnnualCost(9.0, 2.5, 0.5, 12); // 12.0
+    const highRateLowFee = effectiveAnnualCost(9.5, 0.5, 0.5, 12); // 10.5
+    expect(highRateLowFee).toBeLessThan(lowRateHighFee);
+  });
+  it('defaults fees/term and handles a zero term without dividing by zero', () => {
+    expect(effectiveAnnualCost(9)).toBe(9);
+    expect(effectiveAnnualCost(9, 2, 1, 0)).toBe(12);
+  });
+});
 
 // Strips non-breaking spaces / NARROW NO-BREAK SPACE that Intl can emit, so we
 // can assert on the digits/symbols without locale-runtime whitespace flakiness.
