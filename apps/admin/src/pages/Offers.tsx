@@ -1,9 +1,15 @@
 import { useState } from 'react';
-import { Chip, Pill, EmptyState } from '@plynth/shared/ui';
+import { Chip, EmptyState } from '@plynth/shared/ui';
 import { useAsync } from '@plynth/shared/hooks';
 import { formatPercent, formatDate } from '@plynth/shared/utils';
 import { adminService, type AdminOfferRow } from '@plynth/supabase/services';
-import { DataTable, PageHeader, TableSkeleton, type Column } from '../components/DataTable';
+import {
+  DataTable,
+  OfferPill,
+  PageHeader,
+  TableSkeleton,
+  type Column,
+} from '../components/DataTable';
 
 const FILTERS: Array<[string, string]> = [
   ['all', 'All'],
@@ -47,7 +53,7 @@ export function Offers() {
       align: 'right',
       render: (o) => <span className="num">{formatPercent(o.lenderFee, 2)}</span>,
     },
-    { header: 'Status', render: (o) => <Pill status={o.status} /> },
+    { header: 'Status', render: (o) => <OfferPill status={o.status} /> },
     {
       header: 'Expires',
       align: 'right',

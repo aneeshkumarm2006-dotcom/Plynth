@@ -93,62 +93,26 @@ function BarChart({
 
   return (
     <div className="card" style={{ padding: '28px 28px 20px' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 18,
-          height: 200,
-        }}
-      >
+      <div className="admin-chart">
         {points.map((p) => {
-          const pct = Math.max(2, Math.round((p.value / max) * 100));
+          // Reserve headroom so the tallest bar never crowds its value label;
+          // a value of 0 still shows a 2% sliver so the column reads as present.
+          const pct = p.value === 0 ? 2 : Math.max(4, Math.round((p.value / max) * 92));
           return (
-            <div
-              key={p.bucket}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 8,
-                height: '100%',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <span
-                className="num"
-                style={{ fontSize: 12, color: 'var(--slate-deep)', fontWeight: 600 }}
-              >
-                {format(p.value)}
-              </span>
+            <div key={p.bucket} className="admin-chart-col">
+              <span className="admin-chart-value">{format(p.value)}</span>
               <div
-                style={{
-                  width: '100%',
-                  maxWidth: 64,
-                  height: `${pct}%`,
-                  background: 'var(--slate)',
-                  borderRadius: '3px 3px 0 0',
-                  opacity: 0.78,
-                }}
+                className="admin-chart-bar"
+                style={{ height: `${pct}%` }}
                 aria-hidden="true"
               />
             </div>
           );
         })}
       </div>
-      <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
+      <div className="admin-chart-axis">
         {points.map((p) => (
-          <div
-            key={p.bucket}
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              fontSize: 11,
-              letterSpacing: '0.04em',
-              color: 'var(--text-2)',
-            }}
-          >
+          <div key={p.bucket} className="admin-chart-tick">
             {p.bucket}
           </div>
         ))}

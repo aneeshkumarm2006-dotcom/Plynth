@@ -16,7 +16,7 @@ export function DataTable<T>({
   rowKey: (row: T, index: number) => string;
 }) {
   return (
-    <div className="card" style={{ overflow: 'hidden' }}>
+    <div className="card admin-table-card" style={{ overflow: 'hidden' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -26,12 +26,14 @@ export function DataTable<T>({
                 scope="col"
                 style={{
                   textAlign: c.align ?? 'left',
-                  padding: '14px 18px',
+                  padding: '13px 18px',
                   fontSize: 11,
                   fontWeight: 600,
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                   color: 'var(--text-2)',
+                  fontFeatureSettings: c.align === 'right' ? "'tnum' 1" : undefined,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {c.header}
@@ -43,6 +45,7 @@ export function DataTable<T>({
           {rows.map((row, ri) => (
             <tr
               key={rowKey(row, ri)}
+              className="admin-row"
               style={{
                 borderBottom: ri < rows.length - 1 ? '1px solid var(--border)' : 'none',
               }}
@@ -50,11 +53,13 @@ export function DataTable<T>({
               {columns.map((c, ci) => (
                 <td
                   key={ci}
+                  className={c.align === 'right' ? 'num' : undefined}
                   style={{
-                    padding: '16px 18px',
+                    padding: '15px 18px',
                     fontSize: 14,
                     textAlign: c.align ?? 'left',
                     verticalAlign: 'middle',
+                    color: 'var(--text)',
                   }}
                 >
                   {c.render(row)}
@@ -78,20 +83,41 @@ const VERIF: Record<string, { bg: string; color: string; label: string }> = {
 export function VerificationPill({ status }: { status: string }) {
   const v = VERIF[status] ?? { bg: '#F1EFE9', color: 'var(--muted)', label: status };
   return (
-    <span
-      className="pill"
-      style={{ background: v.bg, color: v.color }}
-    >
+    <span className="pill" style={{ background: v.bg, color: v.color }}>
       {v.label}
+    </span>
+  );
+}
+
+// Offer status pill. The shared `Pill` only ships classes for deal-lifecycle
+// states; offer states (submitted/countered/accepted/rejected/expired) have no
+// `pill-*` class in plynth.css and would render unstyled. Map them here to the
+// brand's low-saturation tones — never traffic-light.
+const OFFER: Record<string, { bg: string; color: string; label: string }> = {
+  submitted: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Submitted' },
+  countered: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Countered' },
+  accepted: { bg: 'var(--sage-bg)', color: '#5E7A67', label: 'Accepted' },
+  rejected: { bg: 'var(--dust-bg)', color: '#A85F5F', label: 'Rejected' },
+  expired: { bg: '#F1EFE9', color: 'var(--muted)', label: 'Expired' },
+};
+
+export function OfferPill({ status }: { status: string }) {
+  const o =
+    OFFER[status] ?? {
+      bg: '#F1EFE9',
+      color: 'var(--muted)',
+      label: status.charAt(0).toUpperCase() + status.slice(1),
+    };
+  return (
+    <span className="pill" style={{ background: o.bg, color: o.color }}>
+      {o.label}
     </span>
   );
 }
 
 export function RolePill({ role }: { role: string }) {
   const label = role.charAt(0).toUpperCase() + role.slice(1);
-  return (
-    <span className="pill pill-active">{label}</span>
-  );
+  return <span className="pill pill-active">{label}</span>;
 }
 
 export function PageHeader({ title, lead }: { title: string; lead?: ReactNode }) {

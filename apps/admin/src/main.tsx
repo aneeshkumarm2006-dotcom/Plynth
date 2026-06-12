@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import '@plynth/shared/plynth.css';
+import './admin.css';
 import { AuthProvider } from '@plynth/supabase/auth';
 import { App } from './App';
 

@@ -62,7 +62,7 @@ function ActivityItem({ row, last }: { row: AdminActivityRow; last: boolean }) {
       style={{
         display: 'flex',
         alignItems: 'baseline',
-        gap: 16,
+        gap: 18,
         padding: '14px 22px',
         borderBottom: last ? 'none' : '1px solid var(--border)',
       }}
@@ -70,12 +70,38 @@ function ActivityItem({ row, last }: { row: AdminActivityRow; last: boolean }) {
       <span
         className="num"
         style={{
-          flex: '0 0 84px',
+          flex: '0 0 96px',
           fontSize: 12,
           color: 'var(--text-2)',
+          textAlign: 'right',
         }}
       >
         {timeAgo(row.createdAt)}
+      </span>
+      {/* Timeline node + connecting rule — reads as an editorial log spine. */}
+      <span
+        aria-hidden="true"
+        style={{
+          flex: '0 0 auto',
+          alignSelf: 'stretch',
+          position: 'relative',
+          width: 1,
+          background: 'var(--border)',
+          marginTop: 2,
+        }}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: 4,
+            left: -2.5,
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: 'var(--slate)',
+            opacity: 0.55,
+          }}
+        />
       </span>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14 }}>
@@ -93,7 +119,7 @@ function ActivityItem({ row, last }: { row: AdminActivityRow; last: boolean }) {
             <>
               {' '}
               <span className="deal-no" style={{ fontSize: 13 }}>
-                Offer · № {row.entityId}
+                Offer № {row.entityId}
               </span>
             </>
           )}
