@@ -27,61 +27,8 @@ import {
   positionLabel,
   titleCase,
   beaconBand,
+  whyMatched,
 } from '../lib/present';
-
-interface WhyFactor {
-  label: string;
-  detail: string;
-  pass: boolean;
-}
-
-// Real match rationale computed from the deal against the lender's own criteria.
-function whyMatched(deal: MatchedDeal | null, c: BuilderState | null): WhyFactor[] | null {
-  if (!deal || !c) return null;
-  const factors: WhyFactor[] = [];
-  const assetOk = c.assets.includes(deal.asset_class);
-  factors.push({
-    label: 'Asset class',
-    pass: assetOk,
-    detail: `${deal.asset_class} — ${assetOk ? 'in' : 'outside'} criteria`,
-  });
-  const provOk = c.provinces.includes(deal.province);
-  factors.push({
-    label: 'Geography',
-    pass: provOk,
-    detail: `${deal.province} — ${provOk ? 'in' : 'outside'} criteria`,
-  });
-  const limit = deal.position === 'first' ? c.ltv1 : c.ltv2;
-  const ltvOk = deal.ltv <= limit;
-  factors.push({
-    label: 'LTV',
-    pass: ltvOk,
-    detail: `${ltvPct(deal.ltv)} — ${ltvOk ? 'within' : 'over'} ${limit}% limit`,
-  });
-  const loan = deal.loan_amount_cents / 100;
-  const sizeOk = loan >= c.loanMin && loan <= c.loanMax;
-  factors.push({
-    label: 'Loan size',
-    pass: sizeOk,
-    detail: `${dollars(deal.loan_amount_cents)} — ${sizeOk ? 'within' : 'outside'} band`,
-  });
-  if (deal.beacon_score != null) {
-    const beaconOk = deal.beacon_score >= c.beacon;
-    factors.push({
-      label: 'Beacon',
-      pass: beaconOk,
-      detail: `${deal.beacon_score} — ${beaconOk ? 'above' : 'below'} ${c.beacon} min`,
-    });
-  }
-  if (deal.is_self_employed) {
-    factors.push({
-      label: 'Self-employed (BFS)',
-      pass: c.bfs,
-      detail: c.bfs ? 'Accepted' : 'Not accepted',
-    });
-  }
-  return factors;
-}
 
 export function DealDetail() {
   const { dealId } = useParams();

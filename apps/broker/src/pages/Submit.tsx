@@ -10,6 +10,7 @@ import {
 import { useAuth } from '@plynth/supabase/auth';
 import { dealsService, type DealSubmitInput } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
+import { mapPropertyType, parseRateRange } from '../lib/submit';
 
 const STEPS = ['Property', 'Loan details', 'Borrower', 'Documents', 'Review'];
 
@@ -30,30 +31,11 @@ const BEACON_BANDS: Record<string, number> = {
 // Property/deal flags that lenders may screen out (matched against lender exclusions).
 const DEAL_FLAGS = ['Rural', 'Cannabis-related', 'Hospitality', 'Power of sale', 'Foreign income'];
 
-// UI property type → the deals.property_type enum (residential|commercial|land|multi-residential).
-const PROPERTY_TYPE_MAP: Record<string, DealSubmitInput['property_type']> = {
-  Detached: 'residential',
-  'Semi-detached': 'residential',
-  Townhouse: 'residential',
-  Condominium: 'residential',
-  'Multi-residential': 'multi-residential',
-  Commercial: 'commercial',
-  'Vacant land': 'land',
-};
-
 const PROVINCE_CODES = ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'PE', 'NL'];
 
 // Parse a display amount like "425,000" into integer cents.
 function dollarsToCents(s: string): number {
   return Math.round((parseFloat(s.replace(/[^0-9.]/g, '')) || 0) * 100);
-}
-
-// Parse a rate expectation like "8.5–11%" (or "8.5-11") into {min, max}.
-function parseRateRange(s: string): { rate_min?: number; rate_max?: number } {
-  const m = s.match(/(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)/);
-  if (m) return { rate_min: parseFloat(m[1]), rate_max: parseFloat(m[2]) };
-  const one = s.match(/(\d+(?:\.\d+)?)/);
-  return one ? { rate_min: parseFloat(one[1]), rate_max: parseFloat(one[1]) } : {};
 }
 
 export function Submit() {
@@ -97,7 +79,7 @@ export function Submit() {
       city,
       province,
       property_address: address,
-      property_type: PROPERTY_TYPE_MAP[propertyType] ?? 'residential',
+      property_type: mapPropertyType(propertyType),
       asset_class: 'Residential 1st',
       loan_amount_cents: loanCents,
       estimated_value_cents: valueCents,

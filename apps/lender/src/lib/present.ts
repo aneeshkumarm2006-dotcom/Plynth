@@ -2,7 +2,7 @@
 // lender UI components already consume. Keeping this in one place means the
 // pages stay declarative and the mock/live boundary lives entirely in the
 // service layer.
-import type { MatchedDeal, FundingRow } from '@plynth/supabase/services';
+import type { MatchedDeal, FundingRow, BuilderState } from '@plynth/supabase/services';
 import type { MatchCardData } from '../components/MatchCard';
 import type { SampleMatch } from '../components/CriteriaBuilder';
 
@@ -125,6 +125,64 @@ export function matchedToSample(d: MatchedDeal): SampleMatch {
     asset: d.asset_class,
     term: termLabel(d.term_months),
   };
+}
+
+// ------------------------------------------------------------------
+// "Why this matched" — match rationale computed from a deal against the
+// lender's own criteria (pure, so it's unit-testable). Returns null when
+// either input is missing so the page can fall back to a static placeholder.
+// ------------------------------------------------------------------
+export interface WhyFactor {
+  label: string;
+  detail: string;
+  pass: boolean;
+}
+
+export function whyMatched(deal: MatchedDeal | null, c: BuilderState | null): WhyFactor[] | null {
+  if (!deal || !c) return null;
+  const factors: WhyFactor[] = [];
+  const assetOk = c.assets.includes(deal.asset_class);
+  factors.push({
+    label: 'Asset class',
+    pass: assetOk,
+    detail: `${deal.asset_class} — ${assetOk ? 'in' : 'outside'} criteria`,
+  });
+  const provOk = c.provinces.includes(deal.province);
+  factors.push({
+    label: 'Geography',
+    pass: provOk,
+    detail: `${deal.province} — ${provOk ? 'in' : 'outside'} criteria`,
+  });
+  const limit = deal.position === 'first' ? c.ltv1 : c.ltv2;
+  const ltvOk = deal.ltv <= limit;
+  factors.push({
+    label: 'LTV',
+    pass: ltvOk,
+    detail: `${ltvPct(deal.ltv)} — ${ltvOk ? 'within' : 'over'} ${limit}% limit`,
+  });
+  const loan = deal.loan_amount_cents / 100;
+  const sizeOk = loan >= c.loanMin && loan <= c.loanMax;
+  factors.push({
+    label: 'Loan size',
+    pass: sizeOk,
+    detail: `${dollars(deal.loan_amount_cents)} — ${sizeOk ? 'within' : 'outside'} band`,
+  });
+  if (deal.beacon_score != null) {
+    const beaconOk = deal.beacon_score >= c.beacon;
+    factors.push({
+      label: 'Beacon',
+      pass: beaconOk,
+      detail: `${deal.beacon_score} — ${beaconOk ? 'above' : 'below'} ${c.beacon} min`,
+    });
+  }
+  if (deal.is_self_employed) {
+    factors.push({
+      label: 'Self-employed (BFS)',
+      pass: c.bfs,
+      detail: c.bfs ? 'Accepted' : 'Not accepted',
+    });
+  }
+  return factors;
 }
 
 export interface FundingDisplay {
