@@ -114,7 +114,13 @@ export const dealsService = {
     return pad((nums.length ? Math.max(...nums) : 250) + 1);
   },
 
-  async create(brokerId: string, input: DealSubmitInput): Promise<DealRow> {
+  // `status` controls whether the deal goes live ('active') or is parked as a
+  // 'draft'. Drafts don't get a submitted_at and aren't matched to lenders.
+  async create(
+    brokerId: string,
+    input: DealSubmitInput,
+    status: 'active' | 'draft' = 'active'
+  ): Promise<DealRow> {
     const { deal_number: provided, ...rest } = input;
     if (!hasSupabase || !supabase) {
       const deal_number = provided ?? (await this.nextDealNumber(brokerId));
@@ -129,7 +135,7 @@ export const dealsService = {
         ltv: input.ltv,
         position: input.position,
         term_months: input.term_months,
-        status: 'active',
+        status,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as DealRow;
@@ -145,8 +151,8 @@ export const dealsService = {
           broker_id: brokerId,
           deal_number,
           ...rest,
-          status: 'active',
-          submitted_at: new Date().toISOString(),
+          status,
+          submitted_at: status === 'active' ? new Date().toISOString() : null,
         })
         .select('*')
         .single();
@@ -161,7 +167,10 @@ export const dealsService = {
   },
 
   async update(id: string, patch: Partial<DealSubmitInput & { status: string }>): Promise<DealRow> {
-    if (!hasSupabase || !supabase) throw new Error('mock');
+    if (!hasSupabase || !supabase) {
+      // Mock mode: no persistence — echo the patch so callers can refresh.
+      return { id, ...patch, updated_at: new Date().toISOString() } as unknown as DealRow;
+    }
     const { data, error } = await supabase
       .from('deals')
       .update({ ...patch, updated_at: new Date().toISOString() })
@@ -170,6 +179,16 @@ export const dealsService = {
       .single();
     if (error) throw error;
     return data as DealRow;
+  },
+
+  // Promote a draft to the live marketplace.
+  async submitDraft(id: string): Promise<void> {
+    if (!hasSupabase || !supabase) return;
+    const { error } = await supabase
+      .from('deals')
+      .update({ status: 'active', submitted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
   },
 
   async revealBorrowerTo(dealId: string, lenderIds: string[]): Promise<void> {

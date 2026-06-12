@@ -30,10 +30,12 @@ export function DealDetail() {
   const toast = useToastFire();
   useAuth();
 
-  const { data: deal } = useAsync<DealRow | null>(
+  const { data: deal, refresh: refreshDeal } = useAsync<DealRow | null>(
     () => dealsService.getById(dealId ?? ''),
     [dealId]
   );
+  const [editing, setEditing] = useState(false);
+  const [submittingDraft, setSubmittingDraft] = useState(false);
   const { data: offerRows, loading: offersLoading, refresh: refreshOffers } = useAsync<OfferRow[]>(
     () => offersService.listForDeal(dealId ?? ''),
     [dealId]
@@ -69,6 +71,23 @@ export function DealDetail() {
   const actionDealId = deal?.id ?? dealId ?? f.no;
 
   const offers = (offerRows ?? []).map((o, i) => offerToCard(o, i));
+
+  const submitDraft = async () => {
+    setSubmittingDraft(true);
+    try {
+      await dealsService.submitDraft(actionDealId);
+      toast({
+        title: `Deal № ${view.no} submitted`,
+        sub: 'Matching against subscribed lender criteria sets.',
+      });
+      refreshDeal();
+      refresh();
+    } catch (err) {
+      toast({ title: 'Could not submit deal', sub: (err as Error).message });
+    } finally {
+      setSubmittingDraft(false);
+    }
+  };
 
   return (
     <div className="page page-wide">
@@ -110,9 +129,33 @@ export function DealDetail() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary btn-sm">Edit deal</button>
+          {view.status === 'draft' && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={submitDraft}
+              disabled={submittingDraft}
+            >
+              {submittingDraft ? 'Submitting…' : 'Submit to marketplace'}
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={() => setEditing((v) => !v)}>
+            {editing ? 'Close editor' : 'Edit deal'}
+          </button>
         </div>
       </div>
+
+      {editing && (
+        <EditDealPanel
+          deal={deal}
+          view={view}
+          dealId={actionDealId}
+          toast={toast}
+          onSaved={() => {
+            setEditing(false);
+            refreshDeal();
+          }}
+        />
+      )}
 
       <div
         style={{
@@ -486,6 +529,94 @@ function OfferCard({
       >
         {busy === 'reveal' ? 'Revealing…' : 'Reveal borrower details to this lender'}
       </button>
+    </div>
+  );
+}
+
+function EditDealPanel({
+  deal,
+  view,
+  dealId,
+  toast,
+  onSaved,
+}: {
+  deal: DealRow | null;
+  view: { amount: string; term: string };
+  dealId: string;
+  toast: ToastFn;
+  onSaved: () => void;
+}) {
+  const liveAmount = typeof deal?.loan_amount_cents === 'number' ? deal.loan_amount_cents : null;
+  const [amount, setAmount] = useState(
+    liveAmount != null
+      ? String(Math.round(liveAmount / 100))
+      : view.amount.replace(/[^0-9]/g, '')
+  );
+  const [term, setTerm] = useState(
+    String(typeof deal?.term_months === 'number' ? deal.term_months : parseInt(view.term, 10) || 12)
+  );
+  const [notes, setNotes] = useState(deal?.notes ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const cents = Math.round((parseFloat(amount.replace(/[^0-9.]/g, '')) || 0) * 100);
+    if (cents < 5_000_000) {
+      toast({ title: 'Loan amount too low', sub: 'Minimum is $50,000 CAD.' });
+      return;
+    }
+    setSaving(true);
+    try {
+      await dealsService.update(dealId, {
+        loan_amount_cents: cents,
+        term_months: parseInt(term, 10) || undefined,
+        notes,
+      });
+      toast({ title: 'Deal updated' });
+      onSaved();
+    } catch (err) {
+      toast({ title: 'Could not update deal', sub: (err as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="card card-pad fade-in"
+      style={{ borderColor: 'var(--slate)', marginTop: 16, marginBottom: 8 }}
+    >
+      <SectionDivider n="—" label="Edit deal" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <Field label="Loan amount (CAD)">
+          <input
+            className="input input-num"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </Field>
+        <Field label="Term (months)">
+          <select className="select" value={term} onChange={(e) => setTerm(e.target.value)}>
+            <option value="6">6</option>
+            <option value="12">12</option>
+            <option value="18">18</option>
+            <option value="24">24</option>
+          </select>
+        </Field>
+      </div>
+      <Field label="Notes / summary">
+        <textarea
+          className="input"
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Context for lenders reviewing this deal…"
+        />
+      </Field>
+      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
+      </div>
     </div>
   );
 }

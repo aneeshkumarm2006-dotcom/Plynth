@@ -33,7 +33,9 @@ export function Matched() {
   // mode `subscribe` is a no-op, so this is inert without Supabase wired.
   useEffect(() => {
     if (!profile?.id) return;
-    const unsubscribe = notificationsService.subscribe(profile.id, () => refresh());
+    const unsubscribe = notificationsService.subscribe(profile.id, (n) => {
+      if (n.notification_type === 'new_match') refresh();
+    });
     return unsubscribe;
   }, [profile?.id, refresh]);
 

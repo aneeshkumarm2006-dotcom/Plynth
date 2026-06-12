@@ -67,6 +67,8 @@ export function Submit() {
     };
   };
 
+  const [savingDraft, setSavingDraft] = useState(false);
+
   const onContinue = async () => {
     if (step < 4) {
       setStep((s) => s + 1);
@@ -74,7 +76,7 @@ export function Submit() {
     }
     setSubmitting(true);
     try {
-      const deal = await dealsService.create(profile?.id ?? '', buildInput());
+      const deal = await dealsService.create(profile?.id ?? '', buildInput(), 'active');
       toast({
         title: `Deal № ${deal.deal_number} submitted`,
         sub: 'Matching against subscribed lender criteria sets.',
@@ -84,6 +86,22 @@ export function Submit() {
       toast({ title: 'Could not submit deal', sub: (err as Error).message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onSaveDraft = async () => {
+    setSavingDraft(true);
+    try {
+      const deal = await dealsService.create(profile?.id ?? '', buildInput(), 'draft');
+      toast({
+        title: `Draft saved — Deal № ${deal.deal_number}`,
+        sub: 'Finish and submit it from your pipeline anytime.',
+      });
+      navigate('/pipeline');
+    } catch (err) {
+      toast({ title: 'Could not save draft', sub: (err as Error).message });
+    } finally {
+      setSavingDraft(false);
     }
   };
 
@@ -486,8 +504,14 @@ export function Submit() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-tertiary">Save draft</button>
-          <button className="btn btn-primary" onClick={onContinue} disabled={submitting}>
+          <button
+            className="btn btn-tertiary"
+            onClick={onSaveDraft}
+            disabled={savingDraft || submitting}
+          >
+            {savingDraft ? 'Saving…' : 'Save draft'}
+          </button>
+          <button className="btn btn-primary" onClick={onContinue} disabled={submitting || savingDraft}>
             {step < 4 ? 'Continue' : submitting ? 'Submitting…' : 'Submit to marketplace'}
           </button>
         </div>

@@ -50,7 +50,10 @@ export function Dashboard() {
   // mode `subscribe` is a no-op, so this is inert without Supabase wired.
   useEffect(() => {
     if (!profile?.id) return;
-    const unsubscribe = notificationsService.subscribe(profile.id, () => refresh());
+    const unsubscribe = notificationsService.subscribe(profile.id, (n) => {
+      // Only the matched feed needs refreshing — ignore offer/funding notifications.
+      if (n.notification_type === 'new_match') refresh();
+    });
     return unsubscribe;
   }, [profile?.id, refresh]);
 

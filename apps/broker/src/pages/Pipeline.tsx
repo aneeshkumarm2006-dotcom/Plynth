@@ -5,6 +5,7 @@ import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
 import { dealsService, type DealRow } from '@plynth/supabase/services';
 import { dealRowToCard } from '../lib/present';
+import { useToastFire } from '../components/ToastContext';
 
 const FILTERS: Array<[string, string]> = [
   ['all', 'All'],
@@ -17,12 +18,30 @@ const FILTERS: Array<[string, string]> = [
 export function Pipeline() {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const toast = useToastFire();
   const [filter, setFilter] = useState('all');
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
-  const { data, loading } = useAsync<DealRow[]>(
+  const { data, loading, refresh } = useAsync<DealRow[]>(
     () => dealsService.listForBroker(profile?.id ?? ''),
     [profile?.id]
   );
+
+  const submitDraft = async (routeId: string, dealNo: string) => {
+    setSubmittingId(routeId);
+    try {
+      await dealsService.submitDraft(routeId);
+      toast({
+        title: `Deal № ${dealNo} submitted`,
+        sub: 'Matching against subscribed lender criteria sets.',
+      });
+      refresh();
+    } catch (err) {
+      toast({ title: 'Could not submit deal', sub: (err as Error).message });
+    } finally {
+      setSubmittingId(null);
+    }
+  };
 
   const all = (data ?? []).map(dealRowToCard);
   const rows = all.filter((d) => filter === 'all' || d.status === filter);
@@ -155,7 +174,20 @@ export function Pipeline() {
                       fontSize: 18,
                     }}
                   >
-                    ›
+                    {d.status === 'draft' ? (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          submitDraft(d.routeId, d.no);
+                        }}
+                        disabled={submittingId === d.routeId}
+                      >
+                        {submittingId === d.routeId ? 'Submitting…' : 'Submit'}
+                      </button>
+                    ) : (
+                      '›'
+                    )}
                   </td>
                 </tr>
               ))}

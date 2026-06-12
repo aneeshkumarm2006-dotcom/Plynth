@@ -78,6 +78,33 @@ describe('dealsService deal-number allocation (mock mode)', () => {
     });
     expect(deal.deal_number).toBe('0299');
   });
+
+  it('create() defaults to active, and honours status="draft"', async () => {
+    const base = {
+      city: 'Toronto',
+      province: 'ON',
+      asset_class: 'Residential 1st' as const,
+      loan_amount_cents: 42500000,
+      ltv: 72,
+      position: 'first' as const,
+      term_months: 12,
+    };
+    const active = await dealsService.create('b', base);
+    expect(active.status).toBe('active');
+    const draft = await dealsService.create('b', base, 'draft');
+    expect(draft.status).toBe('draft');
+  });
+
+  it('update() echoes the patch in mock mode (no throw)', async () => {
+    const row = await dealsService.update('deal-1', { notes: 'updated', term_months: 18 });
+    expect(row.id).toBe('deal-1');
+    expect((row as { notes?: string }).notes).toBe('updated');
+    expect(row.term_months).toBe(18);
+  });
+
+  it('submitDraft() resolves without throwing in mock mode', async () => {
+    await expect(dealsService.submitDraft('deal-1')).resolves.toBeUndefined();
+  });
 });
 
 describe('pipelineService.forLender (mock mode)', () => {
