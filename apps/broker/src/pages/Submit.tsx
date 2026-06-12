@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Chip,
   DefList,
   Field,
   FigurePlaceholder,
@@ -18,9 +19,41 @@ const POSITION_VALUES: Record<string, DealSubmitInput['position']> = {
   'Third mortgage': 'third+',
 };
 
+// Beacon band → a representative score the matching function can compare.
+const BEACON_BANDS: Record<string, number> = {
+  '720+': 740,
+  '680–720': 700,
+  '640–680': 660,
+  '600–640': 620,
+};
+
+// Property/deal flags that lenders may screen out (matched against lender exclusions).
+const DEAL_FLAGS = ['Rural', 'Cannabis-related', 'Hospitality', 'Power of sale', 'Foreign income'];
+
+// UI property type → the deals.property_type enum (residential|commercial|land|multi-residential).
+const PROPERTY_TYPE_MAP: Record<string, DealSubmitInput['property_type']> = {
+  Detached: 'residential',
+  'Semi-detached': 'residential',
+  Townhouse: 'residential',
+  Condominium: 'residential',
+  'Multi-residential': 'multi-residential',
+  Commercial: 'commercial',
+  'Vacant land': 'land',
+};
+
+const PROVINCE_CODES = ['ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'PE', 'NL'];
+
 // Parse a display amount like "425,000" into integer cents.
 function dollarsToCents(s: string): number {
   return Math.round((parseFloat(s.replace(/[^0-9.]/g, '')) || 0) * 100);
+}
+
+// Parse a rate expectation like "8.5–11%" (or "8.5-11") into {min, max}.
+function parseRateRange(s: string): { rate_min?: number; rate_max?: number } {
+  const m = s.match(/(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)/);
+  if (m) return { rate_min: parseFloat(m[1]), rate_max: parseFloat(m[2]) };
+  const one = s.match(/(\d+(?:\.\d+)?)/);
+  return one ? { rate_min: parseFloat(one[1]), rate_max: parseFloat(one[1]) } : {};
 }
 
 export function Submit() {
@@ -40,7 +73,13 @@ export function Submit() {
   const [appraisedValue, setAppraisedValue] = useState('590,000');
   const [position, setPosition] = useState('First mortgage');
   const [term, setTerm] = useState('12 months');
+  const [rateExp, setRateExp] = useState('8.5–11%');
   const [employment, setEmployment] = useState('Self-employed');
+  const [beaconBand, setBeaconBand] = useState('680–720');
+  const [flags, setFlags] = useState<string[]>([]);
+
+  const toggleFlag = (f: string) =>
+    setFlags((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
 
   const loanCents = dollarsToCents(loanAmount);
   const valueCents = dollarsToCents(appraisedValue);
@@ -49,14 +88,16 @@ export function Submit() {
   const buildInput = (): DealSubmitInput => {
     // Derive city/province from the trailing tokens of the address line.
     const parts = address.split(',').map((p) => p.trim());
-    const province = parts[parts.length - 1] || 'ON';
+    const rawProvince = (parts[parts.length - 1] || 'ON').toUpperCase();
+    const province = PROVINCE_CODES.includes(rawProvince) ? rawProvince : 'ON';
     const city = parts[parts.length - 2] || parts[0] || '';
+    const rate = parseRateRange(rateExp);
     return {
       // deal_number omitted — dealsService allocates the next number for the broker.
       city,
       province,
       property_address: address,
-      property_type: propertyType,
+      property_type: PROPERTY_TYPE_MAP[propertyType] ?? 'residential',
       asset_class: 'Residential 1st',
       loan_amount_cents: loanCents,
       estimated_value_cents: valueCents,
@@ -64,6 +105,12 @@ export function Submit() {
       position: POSITION_VALUES[position] ?? 'first',
       term_months: parseInt(term, 10) || 12,
       is_self_employed: employment === 'Self-employed',
+      has_bfs_acceptable: employment === 'Self-employed',
+      beacon_score: BEACON_BANDS[beaconBand],
+      rate_min: rate.rate_min,
+      rate_max: rate.rate_max,
+      requested_rate_range: rateExp,
+      exclusion_flags: flags,
     };
   };
 
@@ -238,7 +285,11 @@ export function Submit() {
                 </select>
               </Field>
               <Field label="Rate expectation">
-                <input className="input" defaultValue="8.5–11%" />
+                <input
+                  className="input"
+                  value={rateExp}
+                  onChange={(e) => setRateExp(e.target.value)}
+                />
               </Field>
             </div>
           </div>
@@ -311,7 +362,11 @@ export function Submit() {
                 </select>
               </Field>
               <Field label="Beacon score band">
-                <select className="select">
+                <select
+                  className="select"
+                  value={beaconBand}
+                  onChange={(e) => setBeaconBand(e.target.value)}
+                >
                   <option>680–720</option>
                   <option>640–680</option>
                   <option>720+</option>
@@ -329,6 +384,26 @@ export function Submit() {
                   <option>Equity take-out</option>
                 </select>
               </Field>
+            </div>
+            <div style={{ marginTop: 18 }}>
+              <span className="label" style={{ display: 'block', marginBottom: 10 }}>
+                Property flags
+              </span>
+              <div className="micro muted-text" style={{ marginBottom: 10 }}>
+                Tag anything a lender might screen for. Deals are matched against lender exclusions.
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {DEAL_FLAGS.map((flag) => (
+                  <Chip
+                    key={flag}
+                    on={flags.includes(flag)}
+                    onClick={() => toggleFlag(flag)}
+                    removable={flags.includes(flag)}
+                  >
+                    {flag}
+                  </Chip>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -461,7 +536,9 @@ export function Submit() {
                 ['Position', position],
                 ['LTV', ltv.toFixed(1) + '%'],
                 ['Term', term],
-                ['Rate expectation', '8.5–11%'],
+                ['Rate expectation', rateExp],
+                ['Beacon band', beaconBand],
+                ['Property flags', flags.length ? flags.join(', ') : 'None'],
                 ['Borrower', anon ? 'Anonymized until lender interest' : 'Revealed on submission'],
                 ['Documents', '3 attached'],
               ]}

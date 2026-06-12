@@ -21,6 +21,11 @@ export interface MatchedDeal {
   // come straight from the fixture so the feed reads identically.
   summary?: string | null;
   age?: string | null;
+  // Real deal facts (so the detail page stops hard-coding them).
+  estimated_value_cents?: number | null;
+  beacon_score?: number | null;
+  property_type?: string | null;
+  is_self_employed?: boolean | null;
 }
 
 export const matchedService = {
@@ -42,6 +47,11 @@ export const matchedService = {
         views_count: 0,
         summary: m.summary,
         age: m.age,
+        // Mock facts so the detail page reads coherently without a backend.
+        estimated_value_cents: Math.round((parseInt(m.amount.replace(/[^0-9]/g, ''), 10) * 100) / (parseFloat(m.ltv) / 100)),
+        beacon_score: 700,
+        property_type: m.asset?.startsWith('Residential') ? 'residential' : 'commercial',
+        is_self_employed: true,
       }));
     }
     const { data, error } = await supabase
@@ -50,7 +60,8 @@ export const matchedService = {
         `id, match_score, matched_at, views_count,
          deals!inner (
            id, deal_number, city, province, neighbourhood, asset_class,
-           loan_amount_cents, ltv, position, term_months, status, notes
+           loan_amount_cents, ltv, position, term_months, status, notes,
+           estimated_value_cents, beacon_score, property_type, is_self_employed
          )`
       )
       .eq('lender_id', lenderId)
@@ -73,6 +84,10 @@ export const matchedService = {
       views_count: row.views_count,
       summary: row.deals.notes,
       age: null,
+      estimated_value_cents: row.deals.estimated_value_cents,
+      beacon_score: row.deals.beacon_score,
+      property_type: row.deals.property_type,
+      is_self_employed: row.deals.is_self_employed,
     }));
   },
 

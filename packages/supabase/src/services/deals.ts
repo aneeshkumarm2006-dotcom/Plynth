@@ -8,6 +8,7 @@ export interface DealRow {
   city: string;
   province: string;
   neighbourhood?: string | null;
+  property_type?: string | null;
   asset_class: string;
   loan_amount_cents: number;
   estimated_value_cents?: number | null;
@@ -16,6 +17,7 @@ export interface DealRow {
   term_months: number;
   rate_min?: number | null;
   rate_max?: number | null;
+  requested_rate_range?: string | null;
   borrower_name?: string | null;
   beacon_score?: number | null;
   is_self_employed?: boolean;
@@ -46,6 +48,7 @@ export interface DealSubmitInput {
   term_months: number;
   rate_min?: number;
   rate_max?: number;
+  requested_rate_range?: string;
   borrower_name?: string;
   beacon_score?: number;
   is_self_employed?: boolean;

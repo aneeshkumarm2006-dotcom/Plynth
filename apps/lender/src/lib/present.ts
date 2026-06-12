@@ -25,6 +25,19 @@ export function ltvPct(ltv: number): string {
   return ltv.toFixed(1) + '%';
 }
 
+// "residential" → "Residential", "multi-residential" → "Multi-residential".
+export function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// A beacon score → its display band.
+export function beaconBand(score: number): string {
+  if (score >= 720) return '720+';
+  if (score >= 680) return '680–720';
+  if (score >= 640) return '640–680';
+  return '600–640';
+}
+
 export function termLabel(months: number): string {
   return months + ' mo';
 }

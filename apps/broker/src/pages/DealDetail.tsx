@@ -18,6 +18,7 @@ import {
   ltvPct,
   positionLabel,
   termLabel,
+  titleCase,
   offerToCard,
   type OfferDisplay,
 } from '../lib/present';
@@ -66,6 +67,17 @@ export function DealDetail() {
     neighbourhood: deal?.neighbourhood ?? f.neighbourhood,
     city: deal && !isMockDeal ? cityProvince(deal.city, deal.province) : (deal?.city ?? f.city),
     status: deal?.status ?? f.status,
+    propertyType:
+      deal && !isMockDeal && deal.property_type ? titleCase(deal.property_type) : 'Detached, residential',
+    appraisedValue:
+      deal && !isMockDeal && typeof deal.estimated_value_cents === 'number'
+        ? dollars(deal.estimated_value_cents) + ' CAD'
+        : '$590,000 CAD',
+    rateExpectation:
+      deal && !isMockDeal
+        ? deal.requested_rate_range ??
+          (deal.rate_min != null && deal.rate_max != null ? `${deal.rate_min}–${deal.rate_max}%` : f.rate)
+        : f.rate,
   };
   // The real deal UUID to attach actions to (mock mode falls back to the number).
   const actionDealId = deal?.id ?? dealId ?? f.no;
@@ -173,13 +185,13 @@ export function DealDetail() {
               <SectionDivider n="01" label="Deal facts" />
               <DefList
                 items={[
-                  ['Property type', 'Detached, residential'],
+                  ['Property type', view.propertyType],
                   ['Loan amount', view.amount + ' CAD'],
                   ['Position', view.position],
                   ['LTV', view.ltv],
-                  ['Appraised value', '$590,000 CAD'],
+                  ['Appraised value', view.appraisedValue],
                   ['Term', view.term],
-                  ['Rate expectation', f.rate],
+                  ['Rate expectation', view.rateExpectation],
                   ['Purpose', 'Refinance — debt consolidation'],
                 ]}
               />

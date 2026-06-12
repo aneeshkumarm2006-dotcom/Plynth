@@ -9,8 +9,33 @@ import {
   bareAge,
   matchedToCard,
   fundingToRow,
+  titleCase,
+  beaconBand,
 } from '@lender/src/lib/present';
 import type { MatchedDeal, FundingRow } from '@plynth/supabase/services';
+
+describe('titleCase', () => {
+  it('capitalizes the first letter', () => {
+    expect(titleCase('residential')).toBe('Residential');
+    expect(titleCase('commercial')).toBe('Commercial');
+  });
+  it('leaves hyphenated enums readable', () => {
+    expect(titleCase('multi-residential')).toBe('Multi-residential');
+  });
+});
+
+describe('beaconBand', () => {
+  it('maps scores to display bands at the right thresholds', () => {
+    expect(beaconBand(740)).toBe('720+');
+    expect(beaconBand(720)).toBe('720+');
+    expect(beaconBand(719)).toBe('680–720');
+    expect(beaconBand(680)).toBe('680–720');
+    expect(beaconBand(679)).toBe('640–680');
+    expect(beaconBand(640)).toBe('640–680');
+    expect(beaconBand(639)).toBe('600–640');
+    expect(beaconBand(500)).toBe('600–640');
+  });
+});
 
 // ============================================================
 // dollars — zero, negative, half-dollar rounding, large

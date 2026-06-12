@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   DealNo,
@@ -11,9 +11,77 @@ import {
 import { LENDER_MOCK } from '@plynth/shared/mock';
 import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
-import { matchedService, offersService, type MatchedDeal } from '@plynth/supabase/services';
+import {
+  matchedService,
+  offersService,
+  criteriaService,
+  type MatchedDeal,
+  type BuilderState,
+} from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
-import { cityProvince, dollars, ltvPct, termLabel, positionLabel } from '../lib/present';
+import {
+  cityProvince,
+  dollars,
+  ltvPct,
+  termLabel,
+  positionLabel,
+  titleCase,
+  beaconBand,
+} from '../lib/present';
+
+interface WhyFactor {
+  label: string;
+  detail: string;
+  pass: boolean;
+}
+
+// Real match rationale computed from the deal against the lender's own criteria.
+function whyMatched(deal: MatchedDeal | null, c: BuilderState | null): WhyFactor[] | null {
+  if (!deal || !c) return null;
+  const factors: WhyFactor[] = [];
+  const assetOk = c.assets.includes(deal.asset_class);
+  factors.push({
+    label: 'Asset class',
+    pass: assetOk,
+    detail: `${deal.asset_class} — ${assetOk ? 'in' : 'outside'} criteria`,
+  });
+  const provOk = c.provinces.includes(deal.province);
+  factors.push({
+    label: 'Geography',
+    pass: provOk,
+    detail: `${deal.province} — ${provOk ? 'in' : 'outside'} criteria`,
+  });
+  const limit = deal.position === 'first' ? c.ltv1 : c.ltv2;
+  const ltvOk = deal.ltv <= limit;
+  factors.push({
+    label: 'LTV',
+    pass: ltvOk,
+    detail: `${ltvPct(deal.ltv)} — ${ltvOk ? 'within' : 'over'} ${limit}% limit`,
+  });
+  const loan = deal.loan_amount_cents / 100;
+  const sizeOk = loan >= c.loanMin && loan <= c.loanMax;
+  factors.push({
+    label: 'Loan size',
+    pass: sizeOk,
+    detail: `${dollars(deal.loan_amount_cents)} — ${sizeOk ? 'within' : 'outside'} band`,
+  });
+  if (deal.beacon_score != null) {
+    const beaconOk = deal.beacon_score >= c.beacon;
+    factors.push({
+      label: 'Beacon',
+      pass: beaconOk,
+      detail: `${deal.beacon_score} — ${beaconOk ? 'above' : 'below'} ${c.beacon} min`,
+    });
+  }
+  if (deal.is_self_employed) {
+    factors.push({
+      label: 'Self-employed (BFS)',
+      pass: c.bfs,
+      detail: c.bfs ? 'Accepted' : 'Not accepted',
+    });
+  }
+  return factors;
+}
 
 export function DealDetail() {
   const { dealId } = useParams();
@@ -25,6 +93,18 @@ export function DealDetail() {
     () => matchedService.getForLender(profile?.id ?? '', dealId ?? ''),
     [profile?.id, dealId]
   );
+  const { data: criteria } = useAsync<BuilderState | null>(
+    () => criteriaService.getForLender(profile?.id ?? ''),
+    [profile?.id]
+  );
+
+  // Record this lender's view of the deal (increments views_count for the broker's
+  // demand signal). Fires once the real deal id resolves.
+  useEffect(() => {
+    if (profile?.id && deal?.deal_id) {
+      void matchedService.recordView(profile.id, deal.deal_id);
+    }
+  }, [profile?.id, deal?.deal_id]);
 
   const f = LENDER_MOCK.focus;
   // View model: live deal when resolved, editorial fixture as the fallback.
@@ -37,9 +117,16 @@ export function DealDetail() {
     city: deal ? cityProvince(deal.city, deal.province) : f.city,
     ltv: deal ? ltvPct(deal.ltv) : f.ltv,
     term: deal ? termLabel(deal.term_months) : f.term,
+    propertyType: deal?.property_type ? titleCase(deal.property_type) : 'Detached, residential',
+    appraisedValue:
+      typeof deal?.estimated_value_cents === 'number'
+        ? dollars(deal.estimated_value_cents) + ' CAD'
+        : '$590,000 CAD',
+    beaconBand: deal?.beacon_score != null ? beaconBand(deal.beacon_score) : '680–720',
   };
   // The real deal UUID to attach an offer to (mock mode falls back to the number).
   const offerDealId = deal?.deal_id ?? dealId ?? f.no;
+  const factors = whyMatched(deal, criteria ?? null);
 
   return (
     <div className="page page-wide">
@@ -113,13 +200,13 @@ export function DealDetail() {
               <SectionDivider n="01" label="Deal facts" />
               <DefList
                 items={[
-                  ['Property type', 'Detached, residential'],
+                  ['Property type', view.propertyType],
                   ['Loan amount', view.amount + ' CAD'],
                   ['Position', view.position],
                   ['LTV', view.ltv],
-                  ['Appraised value', '$590,000 CAD'],
+                  ['Appraised value', view.appraisedValue],
                   ['Term', view.term],
-                  ['Beacon band', '680–720'],
+                  ['Beacon band', view.beaconBand],
                   ['Purpose', 'Refinance — consolidation'],
                 ]}
               />
@@ -267,38 +354,37 @@ export function DealDetail() {
           <SectionDivider n="—" label="Why this matched" />
           <div className="card card-pad" style={{ background: '#FCFAF5' }}>
             {(
-              [
-                ['Asset class', `${deal?.asset_class ?? 'Residential 1st'} — in criteria`],
-                ['Geography', `${view.city} — in criteria`],
-                ['LTV', `${view.ltv} — within limit`],
-                ['Loan size', `${view.amount} — within band`],
-                ['Beacon', '680–720 — above 640 min'],
-              ] as Array<[string, string]>
-            ).map(([l, v], i, arr) => (
+              factors ?? [
+                { label: 'Asset class', detail: 'In your criteria', pass: true },
+                { label: 'Geography', detail: 'In your criteria', pass: true },
+                { label: 'LTV', detail: 'Within your limit', pass: true },
+                { label: 'Loan size', detail: 'Within your band', pass: true },
+              ]
+            ).map((factor, i, arr) => (
               <div
-                key={l}
+                key={factor.label}
                 style={{
                   display: 'flex',
                   gap: 10,
                   alignItems: 'flex-start',
                   padding: '9px 0',
-                  borderBottom:
-                    i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
                 }}
               >
                 <span
-                  style={{ color: 'var(--sage)', fontWeight: 700, fontSize: 13 }}
+                  style={{
+                    color: factor.pass ? 'var(--sage)' : 'var(--dust)',
+                    fontWeight: 700,
+                    fontSize: 13,
+                  }}
                 >
-                  ✓
+                  {factor.pass ? '✓' : '✕'}
                 </span>
                 <div>
-                  <div
-                    className="small"
-                    style={{ fontWeight: 600, color: 'var(--slate-deep)' }}
-                  >
-                    {l}
+                  <div className="small" style={{ fontWeight: 600, color: 'var(--slate-deep)' }}>
+                    {factor.label}
                   </div>
-                  <div className="micro muted-text">{v}</div>
+                  <div className="micro muted-text">{factor.detail}</div>
                 </div>
               </div>
             ))}
