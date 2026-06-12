@@ -42,7 +42,11 @@ export interface BuilderState {
 }
 
 export function builderToRow(s: BuilderState): CriteriaRow {
-  const [lo, hi] = s.closeSpeed.split('–').map((v) => parseInt(v, 10));
+  // Accept either an en-dash ("7–10 days") or an ASCII hyphen ("7-10 days").
+  // A matched 0 bound is honoured; only a missing/garbage value falls back.
+  const m = s.closeSpeed.match(/(\d+)\s*[–-]\s*(\d+)/);
+  const lo = m ? parseInt(m[1], 10) : 7;
+  const hi = m ? parseInt(m[2], 10) : 10;
   return {
     asset_classes: s.assets,
     provinces: s.provinces,
@@ -57,8 +61,8 @@ export function builderToRow(s: BuilderState): CriteriaRow {
     accept_bfs_borrowers: s.bfs,
     monthly_deployment_target_cents: s.monthlyTarget * 100,
     available_capital_cents: s.available * 100,
-    close_speed_days_min: lo || 7,
-    close_speed_days_max: hi || 10,
+    close_speed_days_min: lo,
+    close_speed_days_max: hi,
     exclusion_flags: s.exclusions,
   };
 }

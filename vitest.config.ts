@@ -17,6 +17,7 @@ export default defineConfig({
         new URL('./packages/supabase/src/client.ts', import.meta.url)
       ),
       '@lender/src': fileURLToPath(new URL('./apps/lender/src', import.meta.url)),
+      '@broker/src': fileURLToPath(new URL('./apps/broker/src', import.meta.url)),
     },
   },
   test: {
