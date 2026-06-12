@@ -122,8 +122,9 @@ never been exercised end to end.**
 - ⚠️ Geography is a **province/city chip selector, not the spec'd interactive Canada map** — known fidelity gap, not a bug.
 
 ### 4.3 Matched feed — ☐
-- ☐ Asset-class filter chips + sort (Best / Newest). ⚠️ "Expiring soon" sort is a **no-op** (no backing field) — confirm it's inert, scope a fix.
-- ☐ Empty + loading (skeleton) states.
+- ☐ Filters: asset-class chips + Province / Loan-size / Min-match-score selects (`filterAndSortMatched`, ✅ unit-tested). Province dropdown is derived from provinces present in the feed. Result count ("N of M") updates.
+- ☐ Sort (Best / Newest). ⚠️ "Expiring soon" sort is a **no-op** (no backing field) — confirm it's inert, scope a fix.
+- ☐ Empty + loading (skeleton) states; combined filters intersect correctly.
 
 ### 4.4 Pipeline — ☐
 - ☐ Broker: status filters (all/active/offer/negotiating/draft); draft Submit action; row → deal detail.

@@ -78,6 +78,42 @@ export function matchedToCard(d: MatchedDeal): MatchCardData {
   };
 }
 
+// ------------------------------------------------------------------
+// Matched-feed filtering + sorting (pure, so it's unit-testable)
+// ------------------------------------------------------------------
+export interface MatchedFilters {
+  asset: string; // 'all' | asset_class
+  province: string; // 'all' | province code
+  size: string; // 'all' | 'lt500' | '500to1m' | '1mto2m' | 'gt2m'
+  minScore: number; // 0 | 70 | 80 | 90
+  sort: 'best' | 'newest' | 'expiring';
+}
+
+// Loan-size buckets, in cents ($500k = 50_000_000).
+const SIZE_BUCKETS: Record<string, (cents: number) => boolean> = {
+  all: () => true,
+  lt500: (c) => c < 50_000_000,
+  '500to1m': (c) => c >= 50_000_000 && c < 100_000_000,
+  '1mto2m': (c) => c >= 100_000_000 && c < 200_000_000,
+  gt2m: (c) => c >= 200_000_000,
+};
+
+export function filterAndSortMatched(rows: MatchedDeal[], f: MatchedFilters): MatchedDeal[] {
+  const inSize = SIZE_BUCKETS[f.size] ?? SIZE_BUCKETS.all;
+  let out = rows.filter(
+    (d) =>
+      (f.asset === 'all' || d.asset_class === f.asset) &&
+      (f.province === 'all' || d.province === f.province) &&
+      inSize(d.loan_amount_cents) &&
+      d.match_score >= f.minScore
+  );
+  if (f.sort === 'best') out = [...out].sort((a, b) => b.match_score - a.match_score);
+  else if (f.sort === 'newest')
+    out = [...out].sort((a, b) => new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime());
+  // 'expiring' has no backing field yet — preserve source order.
+  return out;
+}
+
 // Compact card for the CriteriaBuilder "Sample matches" preview panel.
 export function matchedToSample(d: MatchedDeal): SampleMatch {
   return {

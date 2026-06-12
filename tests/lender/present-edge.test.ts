@@ -11,8 +11,67 @@ import {
   fundingToRow,
   titleCase,
   beaconBand,
+  filterAndSortMatched,
+  type MatchedFilters,
 } from '@lender/src/lib/present';
 import type { MatchedDeal, FundingRow } from '@plynth/supabase/services';
+
+describe('filterAndSortMatched', () => {
+  const mk = (over: Partial<MatchedDeal>): MatchedDeal =>
+    ({
+      deal_id: 'd',
+      deal_number: '0001',
+      city: 'Toronto',
+      province: 'ON',
+      asset_class: 'Residential 1st',
+      loan_amount_cents: 42_500_000,
+      ltv: 72,
+      position: 'first',
+      term_months: 12,
+      match_score: 80,
+      matched_at: '2026-06-01T00:00:00Z',
+      ...over,
+    }) as MatchedDeal;
+  const rows = [
+    mk({ deal_id: 'a', province: 'ON', asset_class: 'Residential 1st', loan_amount_cents: 42_500_000, match_score: 94, matched_at: '2026-06-05T00:00:00Z' }),
+    mk({ deal_id: 'b', province: 'BC', asset_class: 'Residential 2nd', loan_amount_cents: 89_000_000, match_score: 81, matched_at: '2026-06-03T00:00:00Z' }),
+    mk({ deal_id: 'c', province: 'AB', asset_class: 'Commercial', loan_amount_cents: 340_000_000, match_score: 76, matched_at: '2026-06-08T00:00:00Z' }),
+  ];
+  const base: MatchedFilters = { asset: 'all', province: 'all', size: 'all', minScore: 0, sort: 'best' };
+
+  it('no filters → all rows, best-sorted by score desc', () => {
+    const out = filterAndSortMatched(rows, base);
+    expect(out.map((d) => d.deal_id)).toEqual(['a', 'b', 'c']);
+  });
+  it('province filter', () => {
+    expect(filterAndSortMatched(rows, { ...base, province: 'BC' }).map((d) => d.deal_id)).toEqual(['b']);
+  });
+  it('asset filter', () => {
+    expect(filterAndSortMatched(rows, { ...base, asset: 'Commercial' }).map((d) => d.deal_id)).toEqual(['c']);
+  });
+  it('loan-size buckets (cents)', () => {
+    expect(filterAndSortMatched(rows, { ...base, size: 'lt500' }).map((d) => d.deal_id)).toEqual(['a']);
+    expect(filterAndSortMatched(rows, { ...base, size: '500to1m' }).map((d) => d.deal_id)).toEqual(['b']);
+    expect(filterAndSortMatched(rows, { ...base, size: 'gt2m' }).map((d) => d.deal_id)).toEqual(['c']);
+  });
+  it('min match score', () => {
+    expect(filterAndSortMatched(rows, { ...base, minScore: 80 }).map((d) => d.deal_id)).toEqual(['a', 'b']);
+    expect(filterAndSortMatched(rows, { ...base, minScore: 90 }).map((d) => d.deal_id)).toEqual(['a']);
+  });
+  it('newest sort orders by matched_at desc', () => {
+    expect(filterAndSortMatched(rows, { ...base, sort: 'newest' }).map((d) => d.deal_id)).toEqual(['c', 'a', 'b']);
+  });
+  it('combined filters intersect', () => {
+    expect(
+      filterAndSortMatched(rows, { ...base, province: 'ON', size: 'lt500', minScore: 90 }).map((d) => d.deal_id)
+    ).toEqual(['a']);
+  });
+  it('does not mutate the input array', () => {
+    const copy = [...rows];
+    filterAndSortMatched(rows, { ...base, sort: 'newest' });
+    expect(rows).toEqual(copy);
+  });
+});
 
 describe('titleCase', () => {
   it('capitalizes the first letter', () => {
