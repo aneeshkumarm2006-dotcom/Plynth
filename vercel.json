@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --frozen-lockfile && pnpm -r build && rm -rf dist-vercel && mkdir -p dist-vercel && cp -r apps/broker/dist dist-vercel/broker && cp -r apps/lender/dist dist-vercel/lender && cp -r apps/admin/dist dist-vercel/admin && cp public/index.html dist-vercel/index.html",
+  "buildCommand": "bash scripts/vercel-build.sh",
   "installCommand": "echo 'install handled in buildCommand'",
   "outputDirectory": "dist-vercel",
   "rewrites": [
