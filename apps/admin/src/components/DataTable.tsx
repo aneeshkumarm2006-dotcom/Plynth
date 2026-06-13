@@ -115,6 +115,30 @@ export function OfferPill({ status }: { status: string }) {
   );
 }
 
+// Telemetry severity pill. Brand low-saturation tones, never
+// traffic-light: info=slate, warning=wheat, error/fatal=dust (fatal
+// reads heavier via weight, not a louder hue).
+const SEVERITY: Record<string, { bg: string; color: string; label: string; bold?: boolean }> = {
+  info: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Info' },
+  warning: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Warning' },
+  error: { bg: 'var(--dust-bg)', color: '#A85F5F', label: 'Error' },
+  fatal: { bg: 'var(--dust-bg)', color: '#7A3F3F', label: 'Fatal', bold: true },
+};
+
+export function SeverityPill({ severity }: { severity: string }) {
+  const s =
+    SEVERITY[severity] ?? {
+      bg: '#F1EFE9',
+      color: 'var(--muted)',
+      label: severity.charAt(0).toUpperCase() + severity.slice(1),
+    };
+  return (
+    <span className="pill" style={{ background: s.bg, color: s.color, fontWeight: s.bold ? 700 : undefined }}>
+      {s.label}
+    </span>
+  );
+}
+
 export function RolePill({ role }: { role: string }) {
   const label = role.charAt(0).toUpperCase() + role.slice(1);
   return <span className="pill pill-active">{label}</span>;

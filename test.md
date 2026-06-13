@@ -214,6 +214,27 @@ Login: `admin@plynth.test` / `TestAdmin2026!`.
 - ☐ `[manual]` Admin UI: role/verification pills correct tones; Overview bar charts; tables tabular/aligned; activity timeline. Builds clean (tsc + vite).
 - ☐ PIPEDA: borrower PII must stay out of admin list views; reveal (if added) should be audited — confirm no `borrower_name`/`beacon_score` leaks into Users/Deals lists.
 
+## 9c. Observability — telemetry + monitoring pages (`apps/admin`) — ☐ NEW
+
+Product telemetry pipeline + four super-admin pages. DB layer: `0009` (telemetry
+tables + `ingest_telemetry`), `0010` (alert tables + admin RPCs), `0011` (health/
+user360/funnel/matching read RPCs), `0012` (`evaluate_alert_rules` + pg_cron +
+retention). Apply with the same superuser migrate path as `0007/0008`.
+
+- ☐ `[sec]` ⚠️ **Telemetry RLS** — a broker/lender can INSERT only their OWN rows (policy `te_insert_own`/`ee_insert_own`); `SELECT` is admin-only. Test: as broker, `select * from telemetry_events` → 0 rows; insert with someone else's `user_id` → blocked.
+- ☐ `[sec]` ⚠️ **No user spoofing** — `ingest_telemetry` overwrites `user_id := auth.uid()`; a client-sent `user_id` is ignored. Test: call the RPC with a foreign id in the payload → stored row carries the caller's id.
+- ☐ `[sec]` **PII guardrail** — routes stored without query string; `message`/`stack` length-capped (2000/8000); SDK drops PII-named/non-scalar props. Confirm no borrower name/email/address reaches `props`/`context`.
+- ☐ `[sec]` Health/funnel/user360/matching + all alert RPCs `RAISE 'admin only'` for non-admins; `evaluate_alert_rules()` is NOT granted to `authenticated` (cron + `admin_run_alert_eval` only).
+- ☐ `[int]` SDK emits: signed-in broker/lender navigation creates `page_view` rows; a thrown error creates an `error_events` row with severity + fingerprint. Mock mode = pure no-op (no network).
+- ☐ `[int]` System Health (`/health`): window chips (15m/1h/24h) recompute counts; per-app breakdown; top-fingerprint grouping; error stream filters by app/severity; realtime prepend on new `error_events`.
+- ☐ `[int]` User 360 (`/users/:id`): deals/offers/notifications/login history/audit/recent errors populate; reachable by clicking a user name; `auth.users` read is column-whitelisted.
+- ☐ `[int]` Funnel (`/funnel`): Submitted→Matched→Offered→Funded with drop-off %; matching health lists zero-match + low-match deals; range chips (7/30/90d).
+- ☐ `[int]` Alerts (`/alerts`): rules list with enable/disable toggle; "Run evaluation now" → `admin_run_alert_eval` returns fired count; fired events Acknowledge/Resolve write `admin.alert_*` audit rows; status filter works.
+- ☐ `[int]` Alert evaluation: each rule kind (error_rate_spike/signups_drop/deal_stuck/offers_expiring_unhandled/zero_match_rate) fires correctly and respects `cooldown_min`.
+- ☐ **Retention (pg_cron)** — telemetry_events **90d**, error_events **180d**, alert_events **1yr**; `audit_log` is the 7-yr legal record and is **never** purged here. Verify the four `plynth-*` cron jobs registered (`select * from cron.job`). If pg_cron is absent, migration still succeeds (NOTICE) and "Run now" is the manual path.
+- ☐ `[unit]` `tests/supabase/admin-observability.test.ts` — 13 tests over health/error-stream/user360/funnel/matching/alerts service contract + SDK no-op (covered).
+- ☐ `[manual]` Severity pills use brand tones (info=slate, warning=wheat, error/fatal=dust), never traffic-light. Builds clean (tsc + vite).
+
 ## 9. Cross-cutting `[manual]`
 
 - ☐ Mobile: sidebar → horizontal nav at ≤768px; stat strips/tables stack. ⚠️ Inline two-column page grids (dashboard/criteria/deal-detail) do NOT collapse — known limitation, verify it's tolerable.

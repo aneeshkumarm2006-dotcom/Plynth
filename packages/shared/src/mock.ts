@@ -343,4 +343,117 @@ export const ADMIN_MOCK = {
     { deal_number: '0251', lenderFirm: 'Fortress MIC', rate: 8.95, lenderFee: 1.5, status: 'submitted', expires_at: '2026-06-17T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
     { deal_number: '0236', lenderFirm: 'Fortress MIC', rate: 10.5, lenderFee: 2.5, status: 'countered', expires_at: '2026-06-14T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
   ],
+
+  // ---- Observability (System Health) ----
+  health: {
+    windowMin: 60,
+    errorCount: 7,
+    fatalCount: 1,
+    eventCount: 1432,
+    byApp: [
+      { app: 'broker', errors: 3, events: 612 },
+      { app: 'lender', errors: 3, events: 701 },
+      { app: 'admin', errors: 1, events: 119 },
+    ],
+    topFingerprints: [
+      { fingerprint: 'a1b2c3d4', name: 'PostgrestError', message: 'JWT expired', app: 'lender', count: 3, lastSeen: '2026-06-12T08:01:00Z' },
+      { fingerprint: 'e5f6a7b8', name: 'TypeError', message: "Cannot read properties of undefined (reading 'map')", app: 'broker', count: 2, lastSeen: '2026-06-12T07:40:00Z' },
+      { fingerprint: 'c9d0e1f2', name: 'AbortError', message: 'The user aborted a request.', app: 'broker', count: 1, lastSeen: '2026-06-11T22:15:00Z' },
+      { fingerprint: 'b3c4d5e6', name: 'Error', message: 'Network request failed', app: 'admin', count: 1, lastSeen: '2026-06-11T19:02:00Z' },
+    ],
+  },
+
+  errors: [
+    { id: 9101, createdAt: '2026-06-12T08:01:00Z', app: 'lender', severity: 'error' as const, source: 'rpc', name: 'PostgrestError', message: 'JWT expired', route: '/criteria', userId: '22222222-2222-2222-2222-222222222222', fingerprint: 'a1b2c3d4' },
+    { id: 9100, createdAt: '2026-06-12T07:40:00Z', app: 'broker', severity: 'error' as const, source: 'react_boundary', name: 'TypeError', message: "Cannot read properties of undefined (reading 'map')", route: '/deals/0251', userId: '11111111-1111-1111-1111-111111111111', fingerprint: 'e5f6a7b8' },
+    { id: 9099, createdAt: '2026-06-12T03:22:00Z', app: 'admin', severity: 'fatal' as const, source: 'unhandled', name: 'Error', message: 'Network request failed', route: '/overview', userId: null, fingerprint: 'b3c4d5e6' },
+    { id: 9098, createdAt: '2026-06-11T22:15:00Z', app: 'broker', severity: 'warning' as const, source: 'supabase', name: 'AbortError', message: 'The user aborted a request.', route: '/deals', userId: 'a3000000-0000-0000-0000-000000000001', fingerprint: 'c9d0e1f2' },
+    { id: 9097, createdAt: '2026-06-11T20:48:00Z', app: 'lender', severity: 'error' as const, source: 'rpc', name: 'PostgrestError', message: 'JWT expired', route: '/matched', userId: 'a3000000-0000-0000-0000-000000000002', fingerprint: 'a1b2c3d4' },
+  ],
+
+  // ---- User 360 (keyed by user id) ----
+  user360: {
+    '11111111-1111-1111-1111-111111111111': {
+      profile: { id: '11111111-1111-1111-1111-111111111111', role: 'broker', email: 'broker@plynth.test', name: 'Marcus Chen', firm: 'Northbridge Mortgage Partners', isVerified: true, verificationStatus: 'approved', createdAt: '2026-05-02T00:00:00Z', lastSignInAt: '2026-06-12T08:14:00Z', emailConfirmedAt: '2026-05-02T00:10:00Z' },
+      deals: [
+        { deal_number: '0251', city: 'Ottawa', province: 'ON', amount_cents: 68_000_000, ltv: 65.0, status: 'offer', created_at: '2026-06-10T00:00:00Z' },
+        { deal_number: '0247', city: 'Toronto', province: 'ON', amount_cents: 42_500_000, ltv: 72.0, status: 'offer', created_at: '2026-06-09T00:00:00Z' },
+        { deal_number: '0236', city: 'London', province: 'ON', amount_cents: 31_200_000, ltv: 80.0, status: 'negotiating', created_at: '2026-06-07T00:00:00Z' },
+      ],
+      offers: [],
+      notifications: [
+        { notification_type: 'offer_received', title: 'New offer on № 0247', message: 'Fortress MIC submitted an offer.', is_read: true, created_at: '2026-06-11T00:00:00Z' },
+        { notification_type: 'new_match', title: 'New match on № 0251', message: '3 lenders matched your deal.', is_read: false, created_at: '2026-06-10T01:00:00Z' },
+      ],
+      loginHistory: [
+        { created_at: '2026-06-12T08:14:00Z', ip: '198.51.100.20', user_agent: 'Chrome 126' },
+        { created_at: '2026-06-11T09:02:00Z', ip: '198.51.100.20', user_agent: 'Chrome 126' },
+      ],
+      audit: [
+        { created_at: '2026-06-11T21:40:00Z', action: 'deal.created', entity_type: 'deal', entity_id: '0251', ip: '198.51.100.20' },
+        { created_at: '2026-06-12T08:14:00Z', action: 'session.login', entity_type: null, entity_id: null, ip: '198.51.100.20' },
+      ],
+      recentErrors: [
+        { created_at: '2026-06-12T07:40:00Z', app: 'broker', severity: 'error', source: 'react_boundary', name: 'TypeError', message: "Cannot read properties of undefined (reading 'map')", route: '/deals/0251' },
+      ],
+    },
+    '22222222-2222-2222-2222-222222222222': {
+      profile: { id: '22222222-2222-2222-2222-222222222222', role: 'lender', email: 'lender@plynth.test', name: 'Eleanor Whitfield', firm: 'Fortress MIC', isVerified: true, verificationStatus: 'approved', createdAt: '2026-05-04T00:00:00Z', lastSignInAt: '2026-06-12T07:51:00Z', emailConfirmedAt: '2026-05-04T00:08:00Z' },
+      deals: [],
+      offers: [
+        { deal_number: '0247', rate: 9.25, lender_fee: 2.0, status: 'submitted', expires_at: '2026-06-15T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
+        { deal_number: '0236', rate: 10.5, lender_fee: 2.5, status: 'countered', expires_at: '2026-06-14T00:00:00Z', created_at: '2026-06-11T00:00:00Z' },
+      ],
+      notifications: [
+        { notification_type: 'new_match', title: 'New deal matches your criteria', message: '№ 0251 in Ottawa matched.', is_read: false, created_at: '2026-06-10T02:00:00Z' },
+      ],
+      loginHistory: [{ created_at: '2026-06-12T07:51:00Z', ip: '203.0.113.8', user_agent: 'Safari 17' }],
+      audit: [
+        { created_at: '2026-06-12T07:55:00Z', action: 'offer.created', entity_type: 'offer', entity_id: '0247', ip: '203.0.113.8' },
+      ],
+      recentErrors: [
+        { created_at: '2026-06-12T08:01:00Z', app: 'lender', severity: 'error', source: 'rpc', name: 'PostgrestError', message: 'JWT expired', route: '/criteria' },
+      ],
+    },
+  } as Record<string, unknown>,
+
+  // ---- Funnel + Matching ----
+  funnel: {
+    days: 30,
+    stages: [
+      { stage: 'Submitted', count: 48 },
+      { stage: 'Matched', count: 41 },
+      { stage: 'Offered', count: 23 },
+      { stage: 'Funded', count: 12 },
+    ],
+    leakage: { declined: 4, expired: 3 },
+  },
+
+  matching: {
+    days: 30,
+    avgMatchScore: 71.4,
+    avgMatchesPerDeal: 3.2,
+    zeroMatch: [
+      { deal_number: '0239', city: 'Calgary', province: 'AB', status: 'active', created_at: '2026-06-06T00:00:00Z' },
+      { deal_number: '0244', city: 'Saskatoon', province: 'SK', status: 'active', created_at: '2026-06-05T00:00:00Z' },
+    ],
+    lowMatch: [
+      { deal_number: '0242', city: 'Halifax', bestScore: 38, matchCount: 1 },
+      { deal_number: '0238', city: 'Winnipeg', bestScore: 44, matchCount: 2 },
+    ],
+  },
+
+  // ---- Alerts ----
+  alertRules: [
+    { id: 'r1', kind: 'error_rate_spike' as const, name: 'Error-rate spike', isEnabled: true, severity: 'high' as const, params: { threshold: 50, window_min: 15 }, cooldownMin: 30, lastEvaluatedAt: '2026-06-12T08:10:00Z', lastFiredAt: '2026-06-12T03:22:00Z', createdAt: '2026-06-01T00:00:00Z' },
+    { id: 'r2', kind: 'deal_stuck' as const, name: 'Deals stuck > 3 days', isEnabled: true, severity: 'medium' as const, params: { days: 3 }, cooldownMin: 720, lastEvaluatedAt: '2026-06-12T08:10:00Z', lastFiredAt: null, createdAt: '2026-06-01T00:00:00Z' },
+    { id: 'r3', kind: 'signups_drop' as const, name: 'Signups dropped to zero', isEnabled: false, severity: 'low' as const, params: { factor: 0.2 }, cooldownMin: 1440, lastEvaluatedAt: '2026-06-12T08:10:00Z', lastFiredAt: null, createdAt: '2026-06-01T00:00:00Z' },
+    { id: 'r4', kind: 'offers_expiring_unhandled' as const, name: 'Offers expiring unhandled', isEnabled: true, severity: 'medium' as const, params: { hours: 12 }, cooldownMin: 360, lastEvaluatedAt: '2026-06-12T08:10:00Z', lastFiredAt: '2026-06-11T20:00:00Z', createdAt: '2026-06-01T00:00:00Z' },
+  ],
+
+  alertEvents: [
+    { id: 5102, ruleId: 'r1', ruleName: 'Error-rate spike', kind: 'error_rate_spike' as const, severity: 'high' as const, status: 'open' as const, summary: 'Error rate 73 in 15min on admin (threshold 50)', details: { observed: 73, threshold: 50 }, firedAt: '2026-06-12T03:22:00Z', acknowledgedAt: null, resolvedAt: null },
+    { id: 5101, ruleId: 'r4', ruleName: 'Offers expiring unhandled', kind: 'offers_expiring_unhandled' as const, severity: 'medium' as const, status: 'acknowledged' as const, summary: '4 offers expire within 12h with no broker response', details: { count: 4 }, firedAt: '2026-06-11T20:00:00Z', acknowledgedAt: '2026-06-11T20:30:00Z', resolvedAt: null },
+    { id: 5100, ruleId: 'r1', ruleName: 'Error-rate spike', kind: 'error_rate_spike' as const, severity: 'high' as const, status: 'resolved' as const, summary: 'Error rate 61 in 15min on lender (threshold 50)', details: { observed: 61, threshold: 50 }, firedAt: '2026-06-10T14:05:00Z', acknowledgedAt: '2026-06-10T14:20:00Z', resolvedAt: '2026-06-10T15:00:00Z' },
+  ],
 };

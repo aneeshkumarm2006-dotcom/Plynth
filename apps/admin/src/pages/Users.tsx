@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Chip, EmptyState } from '@plynth/shared/ui';
 import { useAsync } from '@plynth/shared/hooks';
 import { timeAgo } from '@plynth/shared/utils';
@@ -54,10 +55,10 @@ export function Users() {
     {
       header: 'Name',
       render: (u) => (
-        <div>
+        <Link to={`/users/${u.id}`} className="admin-user-link" style={{ display: 'block' }}>
           <div style={{ fontWeight: 600, color: 'var(--slate-deep)' }}>{u.name}</div>
           <div className="micro muted-text">{u.email}</div>
-        </div>
+        </Link>
       ),
     },
     { header: 'Role', render: (u) => <RolePill role={u.role} /> },

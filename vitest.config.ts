@@ -16,6 +16,9 @@ export default defineConfig({
       '@plynth/supabase/client': fileURLToPath(
         new URL('./packages/supabase/src/client.ts', import.meta.url)
       ),
+      '@plynth/supabase/telemetry': fileURLToPath(
+        new URL('./packages/supabase/src/telemetry/index.ts', import.meta.url)
+      ),
       '@lender/src': fileURLToPath(new URL('./apps/lender/src', import.meta.url)),
       '@broker/src': fileURLToPath(new URL('./apps/broker/src', import.meta.url)),
     },

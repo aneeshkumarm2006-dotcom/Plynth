@@ -1,11 +1,17 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from '@plynth/supabase/auth';
+import { trackPageView } from '@plynth/supabase/telemetry';
 import { AppShell } from './components/AppShell';
 import { AuthShell } from './components/AuthShell';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
 import { Users } from './pages/Users';
+import { UserDetail } from './pages/UserDetail';
 import { Activity } from './pages/Activity';
+import { Health } from './pages/Health';
+import { Funnel } from './pages/Funnel';
+import { Alerts } from './pages/Alerts';
 import { Deals } from './pages/Deals';
 import { Offers } from './pages/Offers';
 import { ToastProvider } from './components/ToastContext';
@@ -23,6 +29,7 @@ export function App() {
 
   return (
     <ToastProvider>
+      <RouteTracker />
       {mockMode && <DemoBanner />}
       {!profile ? (
         <Routes>
@@ -35,8 +42,12 @@ export function App() {
         <AppShell>
           <Routes>
             <Route path="/" element={<Overview />} />
-            <Route path="/users" element={<Users />} />
+            <Route path="/health" element={<Health />} />
             <Route path="/activity" element={<Activity />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/funnel" element={<Funnel />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/users/:id" element={<UserDetail />} />
             <Route path="/deals" element={<Deals />} />
             <Route path="/offers" element={<Offers />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
@@ -46,6 +57,16 @@ export function App() {
       )}
     </ToastProvider>
   );
+}
+
+// Emits a page_view telemetry event on every route change. The SDK
+// is a no-op in mock mode, so this is inert without Supabase.
+function RouteTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+  return null;
 }
 
 function NotAuthorized({ onSignOut }: { onSignOut: () => void }) {
