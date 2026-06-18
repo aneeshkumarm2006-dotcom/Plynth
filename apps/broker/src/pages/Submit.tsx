@@ -7,6 +7,7 @@ import {
   FigurePlaceholder,
   SectionDivider,
 } from '@plynth/shared/ui';
+import { formatCAD } from '@plynth/shared/utils';
 import { useAuth } from '@plynth/supabase/auth';
 import { dealsService, type DealSubmitInput } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
@@ -38,6 +39,10 @@ function dollarsToCents(s: string): number {
   return Math.round((parseFloat(s.replace(/[^0-9.]/g, '')) || 0) * 100);
 }
 
+// Client mirror of the deals table CHECK constraint `valid_loan_amount`
+// (loan ≥ $50,000 CAD), expressed in cents.
+const MIN_LOAN_CENTS = 50_000 * 100;
+
 export function Submit() {
   const navigate = useNavigate();
   const toast = useToastFire();
@@ -66,6 +71,14 @@ export function Submit() {
   const loanCents = dollarsToCents(loanAmount);
   const valueCents = dollarsToCents(appraisedValue);
   const ltv = valueCents > 0 ? Math.round((loanCents / valueCents) * 1000) / 10 : 0;
+
+  // Mirror the DB CHECK constraints (valid_loan_amount, valid_ltv) so a
+  // sub-$50k loan or out-of-range LTV is caught before we attempt the insert.
+  const loanError = (): string | null => {
+    if (loanCents < MIN_LOAN_CENTS) return 'Minimum loan amount is $50,000 CAD.';
+    if (ltv <= 0 || ltv > 100) return 'LTV must be between 0% and 100%.';
+    return null;
+  };
 
   const buildInput = (): DealSubmitInput => {
     // Derive city/province from the trailing tokens of the address line.
@@ -99,6 +112,16 @@ export function Submit() {
   const [savingDraft, setSavingDraft] = useState(false);
 
   const onContinue = async () => {
+    // Loan amount / LTV are entered on step 1 (Loan details). Validate before
+    // advancing past it, and again before the final submit.
+    if (step >= 1) {
+      const err = loanError();
+      if (err) {
+        toast({ title: 'Check the loan details', sub: err });
+        setStep(1);
+        return;
+      }
+    }
     if (step < 4) {
       setStep((s) => s + 1);
       return;
@@ -119,6 +142,12 @@ export function Submit() {
   };
 
   const onSaveDraft = async () => {
+    const err = loanError();
+    if (err) {
+      toast({ title: 'Check the loan details', sub: err });
+      setStep(1);
+      return;
+    }
     setSavingDraft(true);
     try {
       const deal = await dealsService.create(profile?.id ?? '', buildInput(), 'draft');
@@ -514,7 +543,7 @@ export function Submit() {
               items={[
                 ['Property', address],
                 ['Property type', `${propertyType}, owner-occupied`],
-                ['Loan amount', '$' + loanAmount + ' CAD'],
+                ['Loan amount', formatCAD(loanCents) + ' CAD'],
                 ['Position', position],
                 ['LTV', ltv.toFixed(1) + '%'],
                 ['Term', term],

@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { EmptyState } from '@plynth/shared/ui';
 import { useAsync } from '@plynth/shared/hooks';
-import { formatCAD, formatPercent, formatDate, timeAgo } from '@plynth/shared/utils';
+import { formatPercent, formatDate, timeAgo } from '@plynth/shared/utils';
 import { adminService, type User360 } from '@plynth/supabase/services';
 import { humanizeAction, moneyShortFromCents } from '../lib/format';
 import {

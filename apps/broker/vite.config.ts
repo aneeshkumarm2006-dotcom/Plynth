@@ -2,9 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-export default defineConfig({
-  // Served from /broker/ in production (one Vercel project, two apps).
-  base: '/broker/',
+export default defineConfig(({ mode }) => ({
+  // Served from /broker/ in production (one Vercel project, three apps); served
+  // from / in dev so deep-links work and the router basename ('/') stays aligned.
+  base: mode === 'production' ? '/broker/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -15,4 +16,4 @@ export default defineConfig({
   server: {
     port: 5173,
   },
-});
+}));

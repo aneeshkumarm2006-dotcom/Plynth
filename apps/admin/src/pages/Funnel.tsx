@@ -7,7 +7,7 @@ import {
   type FunnelData,
   type MatchingHealth,
 } from '@plynth/supabase/services';
-import { DataTable, PageHeader, TableSkeleton, type Column } from '../components/DataTable';
+import { DataTable, PageHeader, type Column } from '../components/DataTable';
 
 const RANGES: Array<[number, string]> = [
   [7, '7 days'],

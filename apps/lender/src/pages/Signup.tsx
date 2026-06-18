@@ -118,7 +118,11 @@ export function Signup() {
     const r = await signUpLender({ ...form, tier });
     if (r.user) {
       // Save the criteria the user just built.
-      await criteriaService.upsert(r.user.id, criteria).catch(() => {});
+      await criteriaService
+        .upsert(r.user.id, criteria)
+        .catch(() => {
+          /* best-effort: a criteria-save hiccup shouldn't block signup */
+        });
     }
     setBusy(false);
     if (r.error) setErr(r.error);

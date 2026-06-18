@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@plynth/shared/utils": ["packages/shared/src/utils/index.ts"],
+      "@plynth/shared/mock": ["packages/shared/src/mock.ts"],
+      "@plynth/supabase/services": ["packages/supabase/src/services/index.ts"],
+      "@plynth/supabase/client": ["packages/supabase/src/client.ts"],
+      "@plynth/supabase/telemetry": ["packages/supabase/src/telemetry/index.ts"],
+      "@lender/src/*": ["apps/lender/src/*"],
+      "@broker/src/*": ["apps/broker/src/*"]
+    }
+  },
+  "include": ["tests", "vitest.config.ts"]
+}

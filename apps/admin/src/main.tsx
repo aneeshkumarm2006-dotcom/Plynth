@@ -11,7 +11,10 @@ initTelemetry({ app: 'admin' });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter basename={import.meta.env.PROD ? '/admin' : '/'}>
+    <BrowserRouter
+      basename={import.meta.env.PROD ? '/admin' : '/'}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <AuthProvider portalRole="admin">
         <App />
       </AuthProvider>

@@ -10,7 +10,10 @@ initTelemetry({ app: 'broker' });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter basename={import.meta.env.PROD ? '/broker' : '/'}>
+    <BrowserRouter
+      basename={import.meta.env.PROD ? '/broker' : '/'}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <AuthProvider portalRole="broker">
         <App />
       </AuthProvider>
