@@ -24,6 +24,15 @@ export interface OfferRow {
   updated_at: string;
 }
 
+export interface CounterEntry {
+  initiated_by: 'lender' | 'broker';
+  rate_percent: number | null;
+  lender_fee_percent: number | null;
+  broker_fee_percent: number | null;
+  broker_note: string | null;
+  created_at: string;
+}
+
 export interface OfferSubmitInput {
   deal_id: string;
   rate_percent: number;
@@ -52,6 +61,34 @@ export const offersService = {
       .order('rate_percent', { ascending: true });
     if (error) throw error;
     return (data ?? []) as OfferRow[];
+  },
+
+  // This lender's offer on a deal + its counter history (newest first),
+  // for the negotiation panel on the lender's deal-detail page.
+  async negotiationForDeal(
+    dealId: string,
+    lenderId: string
+  ): Promise<{ myOffer: OfferRow | null; history: CounterEntry[] }> {
+    if (!hasSupabase || !supabase) return { myOffer: null, history: [] };
+    const { data: offers, error } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('deal_id', dealId)
+      .eq('lender_id', lenderId)
+      .eq('is_deleted', false)
+      .limit(1);
+    if (error) throw error;
+    const myOffer = (offers?.[0] ?? null) as OfferRow | null;
+    let history: CounterEntry[] = [];
+    if (myOffer) {
+      const { data: h } = await supabase
+        .from('offer_history')
+        .select('initiated_by, rate_percent, lender_fee_percent, broker_fee_percent, broker_note, created_at')
+        .eq('offer_id', myOffer.id)
+        .order('created_at', { ascending: false });
+      history = (h ?? []) as CounterEntry[];
+    }
+    return { myOffer, history };
   },
 
   async listForLender(lenderId: string): Promise<OfferRow[]> {

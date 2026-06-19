@@ -10,6 +10,7 @@ import {
 } from '@plynth/shared/ui';
 import { LENDER_MOCK } from '@plynth/shared/mock';
 import { useAsync } from '@plynth/shared/hooks';
+import { formatPercent, timeAgo } from '@plynth/shared/utils';
 import { useAuth } from '@plynth/supabase/auth';
 import {
   matchedService,
@@ -17,6 +18,8 @@ import {
   criteriaService,
   type MatchedDeal,
   type BuilderState,
+  type OfferRow,
+  type CounterEntry,
 } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
 import {
@@ -289,7 +292,7 @@ export function DealDetail() {
             </table>
           </div>
 
-          <OfferComposer
+          <NegotiationPanel
             dealId={offerDealId}
             lenderId={profile?.id}
             defaultLtv={view.ltv.replace('%', '')}
@@ -338,6 +341,209 @@ export function DealDetail() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Shows the live negotiation once this lender has an offer on the deal:
+// the current offer status, the counter timeline (correctly labelled from
+// the lender's perspective), and — when the broker has countered — Accept
+// / Counter-back actions. Falls back to the blank composer when no offer
+// exists yet.
+const OFFER_TONE: Record<string, { bg: string; color: string; label: string }> = {
+  submitted: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Awaiting broker' },
+  viewed: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Viewed by broker' },
+  countered: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Broker countered' },
+  accepted: { bg: 'var(--sage-bg)', color: '#5E7A67', label: 'Accepted — funded' },
+  rejected: { bg: 'var(--dust-bg)', color: '#A85F5F', label: 'Declined' },
+  expired: { bg: '#F1EFE9', color: 'var(--muted)', label: 'Expired' },
+};
+
+function NegotiationPanel({
+  dealId,
+  lenderId,
+  defaultLtv,
+  onDone,
+}: {
+  dealId: string;
+  lenderId?: string;
+  defaultLtv: string;
+  onDone: () => void;
+}) {
+  const toast = useToastFire();
+  const { data, loading, refresh } = useAsync<{ myOffer: OfferRow | null; history: CounterEntry[] }>(
+    () =>
+      lenderId
+        ? offersService.negotiationForDeal(dealId, lenderId)
+        : Promise.resolve({ myOffer: null, history: [] }),
+    [dealId, lenderId]
+  );
+  const [countering, setCountering] = useState(false);
+  const [cRate, setCRate] = useState('');
+  const [cLenderFee, setCLenderFee] = useState('');
+  const [cNote, setCNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const myOffer = data?.myOffer ?? null;
+  const history = data?.history ?? [];
+
+  // No offer yet (or mock mode) → original compose flow.
+  if (loading && !data) {
+    return <div className="skel" style={{ height: 200, borderRadius: 8 }} />;
+  }
+  if (!myOffer) {
+    return <OfferComposer dealId={dealId} lenderId={lenderId} defaultLtv={defaultLtv} onDone={onDone} />;
+  }
+
+  const tone = OFFER_TONE[myOffer.status] ?? OFFER_TONE.submitted;
+  // Latest broker counter (the terms the lender is being asked to accept).
+  const brokerCounter = history.find((h) => h.initiated_by === 'broker');
+
+  const acceptCounter = async () => {
+    setBusy(true);
+    try {
+      await offersService.accept(myOffer.id);
+      toast({ title: 'Counter accepted — deal funded' });
+      onDone();
+    } catch (err) {
+      toast({ title: 'Could not accept', sub: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendCounter = async () => {
+    setBusy(true);
+    try {
+      await offersService.counter(myOffer.id, 'lender', {
+        rate_percent: parseFloat(cRate) || undefined,
+        lender_fee_percent: parseFloat(cLenderFee) || undefined,
+        broker_note: cNote.trim() || undefined,
+      });
+      toast({ title: 'Counter sent to broker' });
+      setCountering(false);
+      setCRate('');
+      setCLenderFee('');
+      setCNote('');
+      refresh();
+    } catch (err) {
+      toast({ title: 'Could not send counter', sub: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card card-pad" style={{ borderColor: 'var(--amber)', padding: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <SectionDivider n="05" label="Your offer" />
+        <span className="pill" style={{ background: tone.bg, color: tone.color }}>{tone.label}</span>
+      </div>
+
+      {/* Current offer terms */}
+      <DefList
+        items={[
+          ['Your rate', formatPercent(myOffer.rate_percent, 2)],
+          ['Lender fee', myOffer.lender_fee_percent != null ? formatPercent(myOffer.lender_fee_percent, 1) : '—'],
+          ['Term', myOffer.term_months ? `${myOffer.term_months} months` : '—'],
+        ]}
+      />
+
+      {/* Broker's counter — the headline when status is 'countered' */}
+      {brokerCounter && myOffer.status === 'countered' && (
+        <div
+          style={{
+            marginTop: 18,
+            padding: '16px 18px',
+            background: 'var(--wheat-bg)',
+            border: '1px solid var(--wheat)',
+            borderRadius: 8,
+          }}
+        >
+          <div className="small" style={{ fontWeight: 600, color: '#8A6D2F', marginBottom: 6 }}>
+            Broker countered
+          </div>
+          <div style={{ fontSize: 14 }}>
+            {brokerCounter.rate_percent != null && (
+              <span>Rate <strong>{formatPercent(brokerCounter.rate_percent, 2)}</strong> · </span>
+            )}
+            {brokerCounter.lender_fee_percent != null && (
+              <span>Lender fee <strong>{formatPercent(brokerCounter.lender_fee_percent, 1)}</strong></span>
+            )}
+          </div>
+          {brokerCounter.broker_note && (
+            <p className="small" style={{ marginTop: 8, color: 'var(--text-2)', fontStyle: 'italic' }}>
+              “{brokerCounter.broker_note}”
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Negotiation timeline */}
+      {history.length > 0 && (
+        <div style={{ marginTop: 22 }}>
+          <div className="micro muted-text" style={{ textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+            Negotiation
+          </div>
+          {history.map((h, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                gap: 12,
+                padding: '8px 0',
+                borderBottom: i < history.length - 1 ? '1px solid var(--border)' : 'none',
+                fontSize: 13,
+              }}
+            >
+              <span className="micro muted-text" style={{ flex: '0 0 70px' }}>{timeAgo(h.created_at)}</span>
+              <span>
+                <strong>{h.initiated_by === 'broker' ? 'Broker' : 'You'}</strong> countered
+                {h.rate_percent != null ? ` at ${formatPercent(h.rate_percent, 2)}` : ''}
+                {h.broker_note ? ` — “${h.broker_note}”` : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Actions when the broker has countered */}
+      {myOffer.status === 'countered' && (
+        <div style={{ marginTop: 24 }}>
+          {!countering ? (
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-primary" onClick={acceptCounter} disabled={busy}>
+                {busy ? 'Working…' : 'Accept counter & fund'}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setCountering(true)} disabled={busy}>
+                Counter back
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <Field label="New rate (%)">
+                <input className="input input-num" value={cRate} onChange={(e) => setCRate(e.target.value)} placeholder={String(myOffer.rate_percent)} />
+              </Field>
+              <Field label="Lender fee (%)">
+                <input className="input input-num" value={cLenderFee} onChange={(e) => setCLenderFee(e.target.value)} />
+              </Field>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Field label="Note to broker">
+                  <textarea className="input" rows={2} value={cNote} onChange={(e) => setCNote(e.target.value)} placeholder="Add context…" />
+                </Field>
+              </div>
+              <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12 }}>
+                <button className="btn btn-primary" onClick={sendCounter} disabled={busy}>
+                  {busy ? 'Sending…' : 'Send counter'}
+                </button>
+                <button className="btn btn-ghost" onClick={() => setCountering(false)} disabled={busy}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
