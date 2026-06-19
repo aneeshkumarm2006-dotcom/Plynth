@@ -33,6 +33,18 @@ export interface CounterEntry {
   created_at: string;
 }
 
+export interface NegotiationCard {
+  offer_id: string;
+  deal_id: string;
+  deal_number: string;
+  city: string;
+  province: string;
+  amount_cents: number;
+  status: OfferRow['status'];
+  rate_percent: number;
+  updated_at: string;
+}
+
 export interface OfferSubmitInput {
   deal_id: string;
   rate_percent: number;
@@ -89,6 +101,35 @@ export const offersService = {
       history = (h ?? []) as CounterEntry[];
     }
     return { myOffer, history };
+  },
+
+  // The lender's live negotiations (non-terminal offers) with deal info,
+  // for the "Needs your response" cards on the dashboard. Countered offers
+  // are the ones awaiting the lender's action.
+  async activeNegotiations(lenderId: string): Promise<NegotiationCard[]> {
+    if (!hasSupabase || !supabase) return [];
+    const { data, error } = await supabase
+      .from('offers')
+      .select(
+        'id, deal_id, rate_percent, status, updated_at, ' +
+          'deals!inner ( deal_number, city, province, loan_amount_cents )'
+      )
+      .eq('lender_id', lenderId)
+      .eq('is_deleted', false)
+      .in('status', ['submitted', 'viewed', 'countered'])
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      offer_id: r.id,
+      deal_id: r.deal_id,
+      deal_number: r.deals?.deal_number ?? '—',
+      city: r.deals?.city ?? '',
+      province: r.deals?.province ?? '',
+      amount_cents: r.deals?.loan_amount_cents ?? 0,
+      status: r.status,
+      rate_percent: r.rate_percent,
+      updated_at: r.updated_at,
+    }));
   },
 
   async listForLender(lenderId: string): Promise<OfferRow[]> {

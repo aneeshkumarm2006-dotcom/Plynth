@@ -15,7 +15,9 @@ import {
   analyticsService,
   matchedService,
   notificationsService,
+  offersService,
   type MatchedDeal,
+  type NegotiationCard,
   type StatBlockData,
   type LenderSidebar,
 } from '@plynth/supabase/services';
@@ -46,16 +48,24 @@ export function Dashboard() {
     [profile?.id]
   );
 
-  // Refresh the matched list when a realtime notification arrives. In mock
-  // mode `subscribe` is a no-op, so this is inert without Supabase wired.
+  const { data: negotiations, refresh: refreshNegotiations } = useAsync<NegotiationCard[]>(
+    () => offersService.activeNegotiations(profile?.id ?? ''),
+    [profile?.id]
+  );
+
+  // Refresh on realtime notifications. In mock mode `subscribe` is a no-op,
+  // so this is inert without Supabase wired.
   useEffect(() => {
     if (!profile?.id) return;
     const unsubscribe = notificationsService.subscribe(profile.id, (n) => {
-      // Only the matched feed needs refreshing — ignore offer/funding notifications.
       if (n.notification_type === 'new_match') refresh();
+      // A counter (or any offer movement) updates the negotiation cards.
+      if (n.notification_type === 'offer_countered' || n.notification_type === 'deal_funded') {
+        refreshNegotiations();
+      }
     });
     return unsubscribe;
-  }, [profile?.id, refresh]);
+  }, [profile?.id, refresh, refreshNegotiations]);
 
   const L = LENDER_MOCK;
   const rows = matched ?? [];
@@ -80,6 +90,27 @@ export function Dashboard() {
       {focus && (
         <div style={{ marginBottom: 44 }}>
           <LenderFocus deal={focus} onOpen={(id) => navigate(`/deals/${id}`)} />
+        </div>
+      )}
+
+      {(negotiations?.length ?? 0) > 0 && (
+        <div style={{ marginBottom: 44 }}>
+          <SectionDivider
+            n="!"
+            label="Needs your response"
+            meta={`${negotiations!.length} ${negotiations!.length === 1 ? 'negotiation' : 'negotiations'}`}
+          />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: 16,
+            }}
+          >
+            {negotiations!.map((n) => (
+              <NegotiationCardView key={n.offer_id} n={n} onOpen={(id) => navigate(`/deals/${id}`)} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -153,6 +184,45 @@ export function Dashboard() {
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
+
+// One card per live negotiation. A broker counter ('countered') is the
+// action-needed state (amber); a still-pending offer reads as informational.
+const NEG_TONE: Record<string, { bg: string; color: string; label: string; action: string }> = {
+  countered: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Broker countered', action: 'Respond' },
+  submitted: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Awaiting broker', action: 'View' },
+  viewed: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Viewed by broker', action: 'View' },
+};
+
+function NegotiationCardView({ n, onOpen }: { n: NegotiationCard; onOpen: (id: string) => void }) {
+  const tone = NEG_TONE[n.status] ?? NEG_TONE.submitted;
+  const needsAction = n.status === 'countered';
+  return (
+    <div
+      className="card card-pad fade-in"
+      style={{ borderColor: needsAction ? 'var(--amber)' : 'var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DealNo n={n.deal_number} size={13} />
+        <span className="pill" style={{ background: tone.bg, color: tone.color }}>{tone.label}</span>
+      </div>
+      <div>
+        <div className="tnum" style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 600, color: 'var(--slate-deep)', lineHeight: 1 }}>
+          {dollars(n.amount_cents)} <span style={{ fontSize: 12, color: 'var(--text-2)' }}>CAD</span>
+        </div>
+        <div className="micro muted-text" style={{ marginTop: 4 }}>
+          {cityProvince(n.city, n.province)} · your offer {n.rate_percent}%
+        </div>
+      </div>
+      <button
+        className={needsAction ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
+        style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
+        onClick={() => onOpen(n.deal_id)}
+      >
+        {tone.action}
+      </button>
     </div>
   );
 }
