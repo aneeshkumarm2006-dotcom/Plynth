@@ -85,19 +85,29 @@ export const offersService = {
         updated_at: new Date().toISOString(),
       };
     }
+    // A lender may have at most one offer per deal (unique constraint
+    // unique_lender_per_deal). Re-submitting must UPDATE that offer, not
+    // insert a second one (a raw insert returns 409 Conflict). Upsert on
+    // the (deal_id, lender_id) conflict target, resetting it to a fresh
+    // 'submitted' offer with the new terms.
     const { data, error } = await supabase
       .from('offers')
-      .insert({
-        deal_id: input.deal_id,
-        lender_id: lenderId,
-        rate_percent: input.rate_percent,
-        lender_fee_percent: input.lender_fee_percent,
-        broker_fee_percent: input.broker_fee_percent,
-        term_months: input.term_months,
-        max_ltv: input.max_ltv,
-        conditions_text: input.conditions_text,
-        expires_at: expiryDate(input.expires_in_days ?? 5),
-      })
+      .upsert(
+        {
+          deal_id: input.deal_id,
+          lender_id: lenderId,
+          rate_percent: input.rate_percent,
+          lender_fee_percent: input.lender_fee_percent,
+          broker_fee_percent: input.broker_fee_percent,
+          term_months: input.term_months,
+          max_ltv: input.max_ltv,
+          conditions_text: input.conditions_text,
+          status: 'submitted',
+          is_deleted: false,
+          expires_at: expiryDate(input.expires_in_days ?? 5),
+        },
+        { onConflict: 'deal_id,lender_id' }
+      )
       .select('*')
       .single();
     if (error) throw error;
