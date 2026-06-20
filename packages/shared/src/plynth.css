@@ -24,12 +24,12 @@
   --muted:        #94A3B8;
 
   /* Status — low-saturation, never traffic-light */
-  --sage:         #7C9885;   /* positive */
+  --sage:         #4F86C6;   /* positive (blue) */
   --dust:         #C97B7B;   /* negative */
   --wheat:        #D4B574;   /* caution */
 
   /* Tints for status pill backgrounds (very low sat) */
-  --sage-bg:      #EDF1ED;
+  --sage-bg:      #E7EEF7;
   --dust-bg:      #F6ECEC;
   --wheat-bg:     #F6F0E2;
   --slate-bg:     #ECEFF4;
@@ -240,7 +240,7 @@ a { color: var(--slate); text-decoration: none; }
 .pill-matched   { background: var(--amber-bg);  color: var(--amber-deep); }
 .pill-offer     { background: var(--amber-bg);  color: var(--amber-deep); }
 .pill-negotiating { background: var(--wheat-bg); color: #A8893F; }
-.pill-funded    { background: var(--sage-bg);   color: #5E7A67; }
+.pill-funded    { background: var(--sage-bg);   color: #3F6390; }
 .pill-declined  { background: var(--dust-bg);   color: #A85F5F; }
 .pill-expired   { background: #F1EFE9;          color: var(--muted); }
 

@@ -75,7 +75,7 @@ export function DataTable<T>({
 
 // Verification status pill — approved=sage, pending=wheat, rejected=dust.
 const VERIF: Record<string, { bg: string; color: string; label: string }> = {
-  approved: { bg: 'var(--sage-bg)', color: '#5E7A67', label: 'Approved' },
+  approved: { bg: 'var(--sage-bg)', color: '#3F6390', label: 'Approved' },
   pending: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Pending' },
   rejected: { bg: 'var(--dust-bg)', color: '#A85F5F', label: 'Rejected' },
 };
@@ -96,7 +96,7 @@ export function VerificationPill({ status }: { status: string }) {
 const OFFER: Record<string, { bg: string; color: string; label: string }> = {
   submitted: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Submitted' },
   countered: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Countered' },
-  accepted: { bg: 'var(--sage-bg)', color: '#5E7A67', label: 'Accepted' },
+  accepted: { bg: 'var(--sage-bg)', color: '#3F6390', label: 'Accepted' },
   rejected: { bg: 'var(--dust-bg)', color: '#A85F5F', label: 'Rejected' },
   expired: { bg: '#F1EFE9', color: 'var(--muted)', label: 'Expired' },
 };
