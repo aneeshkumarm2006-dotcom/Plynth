@@ -73,9 +73,12 @@ export const pipelineService = {
       cols.Funded.push(card(f.deal_id, { no: f.deal_number, city: f.city, amount: dollars(f.loan_amount_cents) }));
     }
 
-    // Matched deals the lender hasn't acted on yet sit in Reviewing.
+    // Matched deals with no offer yet: a passed deal drops to Dead, the rest
+    // sit in Reviewing (interested or not-yet-acted).
     for (const d of matched) {
-      if (!dealsWithOffers.has(d.deal_id)) cols.Reviewing.push(card(d.deal_id));
+      if (dealsWithOffers.has(d.deal_id)) continue;
+      if (d.interest_status === 'passed') cols.Dead.push(card(d.deal_id));
+      else cols.Reviewing.push(card(d.deal_id));
     }
 
     return cols;

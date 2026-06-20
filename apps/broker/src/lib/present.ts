@@ -109,6 +109,8 @@ export interface DealDisplay {
   offers: number;
   status: string;
   updated: string;
+  // The broker's own notes — drives the "deal in focus" narrative when present.
+  summary?: string;
 }
 
 export function dealRowToCard(d: DealLike): DealDisplay {
@@ -137,6 +139,7 @@ export function dealRowToCard(d: DealLike): DealDisplay {
     offers: d.offers ?? 0,
     status: d.status,
     updated: bareAge(d.updated_at),
+    summary: d.notes ?? undefined,
   };
 }
 

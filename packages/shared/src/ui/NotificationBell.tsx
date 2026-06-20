@@ -5,9 +5,11 @@ import { timeAgo } from '../utils';
 export function NotificationBell({
   userId,
   onOpenEntity,
+  onSeeAll,
 }: {
   userId: string | undefined;
   onOpenEntity?: (entityType: string, entityId: string) => void;
+  onSeeAll?: () => void;
 }) {
   const { items, unread, markRead, markAllRead } = useNotifications(userId);
   const [open, setOpen] = useState(false);
@@ -157,6 +159,29 @@ export function NotificationBell({
                 </div>
               </div>
             ))
+          )}
+          {onSeeAll && (
+            <div
+              style={{
+                padding: '10px 16px',
+                borderTop: '1px solid var(--border)',
+                textAlign: 'center',
+                position: 'sticky',
+                bottom: 0,
+                background: 'var(--surface, #fff)',
+              }}
+            >
+              <button
+                className="btn btn-tertiary btn-sm"
+                style={{ padding: 0 }}
+                onClick={() => {
+                  setOpen(false);
+                  onSeeAll();
+                }}
+              >
+                See all notifications
+              </button>
+            </div>
           )}
         </div>
       )}

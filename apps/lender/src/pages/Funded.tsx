@@ -1,7 +1,12 @@
 import { StatBlock, EmptyState } from '@plynth/shared/ui';
 import { useAsync } from '@plynth/shared/hooks';
 import { useAuth } from '@plynth/supabase/auth';
-import { fundingsService, type FundingRow } from '@plynth/supabase/services';
+import {
+  analyticsService,
+  fundingsService,
+  type FundingRow,
+  type LenderSidebar,
+} from '@plynth/supabase/services';
 import { fundingToRow } from '../lib/present';
 
 export function Funded() {
@@ -10,11 +15,18 @@ export function Funded() {
     () => fundingsService.listForLender(profile?.id ?? ''),
     [profile?.id]
   );
+  // Win Rate is an account-level metric — pull it from the same analytics
+  // source the dashboard uses rather than hard-coding it here.
+  const { data: sidebar } = useAsync<LenderSidebar>(
+    () => analyticsService.lenderSidebar(profile?.id ?? ''),
+    [profile?.id]
+  );
   const rows = (data ?? []).map(fundingToRow);
 
   // Headline figures derived from the funded set; YTD volume sums loan amounts.
   const ytdCents = (data ?? []).reduce((sum, f) => sum + f.loan_amount_cents, 0);
   const ytdLabel = '$' + (ytdCents / 100_000_000).toFixed(1);
+  const winRate = sidebar?.winRate?.replace('%', '') ?? '—';
   const avgRate =
     rows.length > 0
       ? ((data ?? []).reduce((s, f) => s + f.actual_rate_percent, 0) / rows.length).toFixed(1)
@@ -33,7 +45,7 @@ export function Funded() {
         style={{ marginBottom: 28, gridTemplateColumns: 'repeat(3,1fr)' }}
       >
         <StatBlock value={ytdLabel} unit="M" label="Funded YTD" />
-        <StatBlock value="31" unit="%" label="Win Rate" />
+        <StatBlock value={winRate} unit="%" label="Win Rate" />
         <StatBlock value={avgRate} unit="%" label="Avg Funded Rate" />
       </div>
       {loading && rows.length === 0 ? (

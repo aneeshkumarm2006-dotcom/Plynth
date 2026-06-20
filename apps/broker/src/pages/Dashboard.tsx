@@ -199,6 +199,9 @@ export function Dashboard() {
 
 function DealInFocus({ deal, onOpen }: { deal: DealDisplay; onOpen: (id: string) => void }) {
   const f = BROKER_MOCK.focus;
+  // Prefer the deal's own notes; fall back to the editorial fixture only when
+  // the broker hasn't written a summary.
+  const narrative = deal.summary?.trim() ? deal.summary : f.quote;
   return (
     <div className="card fade-in" style={{ overflow: 'hidden', position: 'relative' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', minHeight: 300 }}>
@@ -223,7 +226,7 @@ function DealInFocus({ deal, onOpen }: { deal: DealDisplay; onOpen: (id: string)
               flex: 1,
             }}
           >
-            “{f.quote}”
+            “{narrative}”
           </blockquote>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 32 }}>
             <button className="btn btn-primary" onClick={() => onOpen(deal.routeId)}>

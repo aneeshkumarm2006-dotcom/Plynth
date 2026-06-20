@@ -12,6 +12,7 @@ import { DealDetail } from './pages/DealDetail';
 import { Criteria } from './pages/Criteria';
 import { Pipeline } from './pages/Pipeline';
 import { Funded } from './pages/Funded';
+import { Notifications } from './pages/Notifications';
 import { Account } from './pages/Account';
 
 export function App() {
@@ -37,6 +38,7 @@ export function App() {
             <Route path="/criteria" element={<Criteria />} />
             <Route path="/pipeline" element={<Pipeline />} />
             <Route path="/funded" element={<Funded />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/account" element={<Account />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

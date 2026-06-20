@@ -11,6 +11,7 @@ import { DealDetail } from './pages/DealDetail';
 import { Submit } from './pages/Submit';
 import { Lenders } from './pages/Lenders';
 import { Funded } from './pages/Funded';
+import { Notifications } from './pages/Notifications';
 import { Settings } from './pages/Settings';
 import { ToastProvider } from './components/ToastContext';
 
@@ -37,6 +38,7 @@ export function App() {
             <Route path="/submit" element={<Submit />} />
             <Route path="/lenders" element={<Lenders />} />
             <Route path="/funded" element={<Funded />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

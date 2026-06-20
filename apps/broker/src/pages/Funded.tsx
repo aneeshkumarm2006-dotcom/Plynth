@@ -15,6 +15,15 @@ export function Funded() {
   // Headline figures derived from the funded set.
   const ytdCents = (data ?? []).reduce((sum, f) => sum + f.loan_amount_cents, 0);
   const ytdLabel = '$' + (ytdCents / 100_000_000).toFixed(1);
+  // Trailing 90 days, computed from the closing dates rather than hard-coded.
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const t90Cents = (data ?? [])
+    .filter((f) => {
+      const t = new Date(f.closed_at).getTime();
+      return !Number.isNaN(t) && t >= ninetyDaysAgo;
+    })
+    .reduce((sum, f) => sum + f.loan_amount_cents, 0);
+  const t90Label = '$' + (t90Cents / 100_000_000).toFixed(2);
   const avgRate =
     rows.length > 0
       ? ((data ?? []).reduce((s, f) => s + f.actual_rate_percent, 0) / rows.length).toFixed(1)
@@ -32,7 +41,7 @@ export function Funded() {
         className="stat-strip"
         style={{ marginBottom: 28, gridTemplateColumns: 'repeat(3,1fr)' }}
       >
-        <StatBlock value="$5.92" unit="M" label="Funded — Trailing 90 Days" />
+        <StatBlock value={t90Label} unit="M" label="Funded — Trailing 90 Days" />
         <StatBlock value={ytdLabel} unit="M" label="Volume YTD" />
         <StatBlock value={avgRate} unit="%" label="Avg Funded Rate" />
       </div>

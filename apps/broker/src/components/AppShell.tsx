@@ -13,6 +13,7 @@ const NAV: SidebarItem[] = [
   { id: 'lenders', label: 'Lenders' },
   { id: 'funded', label: 'Funded' },
   { group: 'Account' },
+  { id: 'notifications', label: 'Notifications' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -22,6 +23,7 @@ const ROUTE_TO_ID: Record<string, string> = {
   '/submit': 'submit',
   '/lenders': 'lenders',
   '/funded': 'funded',
+  '/notifications': 'notifications',
   '/settings': 'settings',
 };
 
@@ -31,6 +33,7 @@ const ID_TO_ROUTE: Record<string, string> = {
   submit: '/submit',
   lenders: '/lenders',
   funded: '/funded',
+  notifications: '/notifications',
   settings: '/settings',
 };
 
@@ -60,6 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onOpenEntity={(type, id) => {
             if (type === 'offer' || type === 'deal') navigate(`/deals/${id}`);
           }}
+          onSeeAll={() => navigate('/notifications')}
         />
         <ProfileMenu
           name={displayName}

@@ -130,7 +130,21 @@ export function Dashboard() {
               />
             ) : (
               rows.slice(0, 3).map((d) => (
-                <MatchCard key={d.deal_id} d={matchedToCard(d)} dealId={d.deal_id} onToast={toast} dense />
+                <MatchCard
+                  key={d.deal_id}
+                  d={matchedToCard(d)}
+                  dealId={d.deal_id}
+                  lenderId={profile?.id}
+                  initialAct={
+                    d.interest_status === 'passed'
+                      ? 'pass'
+                      : d.interest_status === 'interested'
+                        ? 'interested'
+                        : null
+                  }
+                  onToast={toast}
+                  dense
+                />
               ))
             )}
           </div>

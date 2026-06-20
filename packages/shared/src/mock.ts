@@ -278,6 +278,28 @@ export const LENDER_MOCK = {
   ],
 };
 
+// Seed for the notifications inbox + bell when no Supabase project is wired.
+// `hoursAgo` is resolved to a real `created_at` by notificationsService so the
+// relative timestamps ("2h ago") always read fresh. Entity ids are deal
+// numbers — the same identifier mock routing uses for /deals/:id.
+export interface MockNotification {
+  notification_type: string;
+  title: string;
+  message: string;
+  entity_type: 'deal' | 'offer';
+  entity_id: string;
+  is_read: boolean;
+  hoursAgo: number;
+}
+
+export const MOCK_NOTIFICATIONS: MockNotification[] = [
+  { notification_type: 'new_match', title: 'New match — Deal № 0251', message: 'Ottawa, ON · $680,000 · 88% match to your criteria.', entity_type: 'deal', entity_id: '0251', is_read: false, hoursAgo: 2 },
+  { notification_type: 'offer_received', title: 'New offer — Deal № 0247', message: 'A lender submitted at 9.25% with a 2.0% fee.', entity_type: 'deal', entity_id: '0247', is_read: false, hoursAgo: 5 },
+  { notification_type: 'offer_countered', title: 'Counter-offer — Deal № 0247', message: 'The other side countered at 9.0%.', entity_type: 'deal', entity_id: '0247', is_read: false, hoursAgo: 26 },
+  { notification_type: 'borrower_revealed', title: 'Borrower revealed — Deal № 0247', message: 'Identity shared after an offer was made.', entity_type: 'deal', entity_id: '0247', is_read: true, hoursAgo: 30 },
+  { notification_type: 'deal_funded', title: 'Deal funded — Deal № 0231', message: 'Closed at 9.0% · $540,000 in Hamilton, ON.', entity_type: 'deal', entity_id: '0231', is_read: true, hoursAgo: 52 },
+];
+
 export const CITIES_BY_PROVINCE: Record<string, string[]> = {
   ON: ['Toronto', 'Ottawa', 'Mississauga', 'Hamilton', 'London'],
   QC: ['Montréal', 'Laval', 'Québec City', 'Gatineau'],

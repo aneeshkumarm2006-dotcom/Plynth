@@ -22,12 +22,62 @@ const TABS = [
 
 type Tab = (typeof TABS)[number][0];
 
+// Lightweight localStorage persistence for the demo settings forms, so edits
+// survive a refresh even without a profile-update endpoint wired.
+const PROFILE_KEY = 'plynth:broker:profile';
+const NOTIF_KEY = 'plynth:broker:notifs';
+function loadJSON<T>(key: string, fallback: T): T {
+  if (typeof localStorage === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function saveJSON(key: string, value: unknown): void {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(key, JSON.stringify(value));
+}
+
+const NOTIF_DEFAULTS: Record<string, boolean> = {
+  'New offers': true,
+  'Offer expiring soon': true,
+  'Lender views your deal': false,
+  'Deal funded': true,
+  'Weekly pipeline digest': true,
+};
+
 export function Settings() {
   const [tab, setTab] = useState<Tab>('profile');
   const toast = useToastFire();
   const { profile } = useAuth();
   const [activity, setActivity] = useState<AuditLogRow[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+
+  // Controlled profile form, seeded from localStorage (falling back to the
+  // mock identity) so typed changes aren't silently dropped.
+  const [form, setForm] = useState(() =>
+    loadJSON(PROFILE_KEY, {
+      name: BROKER_MOCK.user.name,
+      email: BROKER_MOCK.user.email,
+      phone: '(416) 555-0142',
+      years: '6–10',
+    })
+  );
+  const setField = (k: keyof typeof form) => (e: { target: { value: string } }) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const saveProfile = () => {
+    saveJSON(PROFILE_KEY, form);
+    toast({ title: 'Profile saved', sub: 'Your changes are stored.' });
+  };
+
+  const [notifs, setNotifs] = useState(() => loadJSON(NOTIF_KEY, NOTIF_DEFAULTS));
+  const toggleNotif = (label: string) =>
+    setNotifs((prev) => {
+      const next = { ...prev, [label]: !prev[label] };
+      saveJSON(NOTIF_KEY, next);
+      return next;
+    });
 
   useEffect(() => {
     if (tab !== 'activity' || !profile) return;
@@ -83,30 +133,31 @@ export function Settings() {
                 }}
               >
                 <Avatar initials={BROKER_MOCK.user.initials} size={64} />
-                <button className="btn btn-ghost btn-sm">Change photo</button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => toast({ title: 'Photo upload', sub: 'Available once your profile is live.' })}
+                >
+                  Change photo
+                </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <Field label="Full name">
-                  <input className="input" defaultValue={BROKER_MOCK.user.name} />
+                  <input className="input" value={form.name} onChange={setField('name')} />
                 </Field>
                 <Field label="Email">
-                  <input className="input" defaultValue={BROKER_MOCK.user.email} />
+                  <input className="input" value={form.email} onChange={setField('email')} />
                 </Field>
                 <Field label="Phone">
-                  <input className="input input-num" defaultValue="(416) 555-0142" />
+                  <input className="input input-num" value={form.phone} onChange={setField('phone')} />
                 </Field>
                 <Field label="Years in business">
-                  <select className="select">
+                  <select className="select" value={form.years} onChange={setField('years')}>
                     <option>6–10</option>
                     <option>More than 10</option>
                   </select>
                 </Field>
               </div>
-              <button
-                className="btn btn-primary"
-                style={{ marginTop: 12 }}
-                onClick={() => toast({ title: 'Profile updated' })}
-              >
+              <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={saveProfile}>
                 Save changes
               </button>
             </div>
@@ -124,7 +175,16 @@ export function Settings() {
                   ['Verification status', 'Verified'],
                 ]}
               />
-              <button className="btn btn-ghost" style={{ marginTop: 18 }}>
+              <button
+                className="btn btn-ghost"
+                style={{ marginTop: 18 }}
+                onClick={() =>
+                  toast({
+                    title: 'Brokerage changes are reviewed',
+                    sub: 'Licence updates go through compliance — contact support to amend.',
+                  })
+                }
+              >
                 Update brokerage details
               </button>
             </div>
@@ -133,14 +193,13 @@ export function Settings() {
           {tab === 'notifications' && (
             <div className="fade-in">
               <SectionDivider n="03" label="Notifications" />
-              {([
-                ['New offers', true],
-                ['Offer expiring soon', true],
-                ['Lender views your deal', false],
-                ['Deal funded', true],
-                ['Weekly pipeline digest', true],
-              ] as Array<[string, boolean]>).map(([l, on]) => (
-                <SettingToggle key={l} label={l} on={on} />
+              {Object.keys(NOTIF_DEFAULTS).map((l) => (
+                <SettingToggle
+                  key={l}
+                  label={l}
+                  on={notifs[l]}
+                  onChange={() => toggleNotif(l)}
+                />
               ))}
             </div>
           )}

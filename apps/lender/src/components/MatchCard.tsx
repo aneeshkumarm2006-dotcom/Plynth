@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DealNo, DefList, MatchBar } from '@plynth/shared/ui';
 import type { ToastSpec } from '@plynth/shared/ui';
+import { matchedService } from '@plynth/supabase/services';
 
 export interface MatchCardData {
   no: string;
@@ -22,16 +23,28 @@ export function MatchCard({
   onToast,
   dense,
   dealId,
+  lenderId,
+  initialAct = null,
 }: {
   d: MatchCardData;
   onToast: (t: ToastSpec) => void;
   dense?: boolean;
   // Identifier used for routing — a deal UUID in live mode, the deal number in mock.
   dealId?: string;
+  // Lender + persisted prior signal so Interested/Pass survive a refresh.
+  lenderId?: string;
+  initialAct?: null | 'interested' | 'pass';
 }) {
-  const [acted, setActed] = useState<null | 'interested' | 'pass'>(null);
+  const [acted, setActed] = useState<null | 'interested' | 'pass'>(initialAct);
   const navigate = useNavigate();
   const target = dealId ?? d.no;
+
+  const act = (next: 'interested' | 'pass') => {
+    setActed(next);
+    if (lenderId) {
+      void matchedService.setInterest(lenderId, target, next === 'pass' ? 'passed' : 'interested');
+    }
+  };
   return (
     <div
       className="card card-hover"
@@ -131,25 +144,25 @@ export function MatchCard({
           Make offer
         </button>
         <button
-          className="btn btn-secondary btn-sm"
+          className={'btn btn-sm ' + (acted === 'interested' ? 'btn-primary' : 'btn-secondary')}
           onClick={() => {
-            setActed('interested');
+            act('interested');
             onToast({
               title: 'Marked interested — Deal № ' + d.no,
               sub: "The broker is notified you're reviewing.",
             });
           }}
         >
-          Interested
+          {acted === 'interested' ? 'Interested ✓' : 'Interested'}
         </button>
         <button
           className="btn btn-tertiary btn-sm"
           onClick={() => {
-            setActed('pass');
+            act('pass');
             onToast({ title: 'Passed on Deal № ' + d.no });
           }}
         >
-          Pass
+          {acted === 'pass' ? 'Passed' : 'Pass'}
         </button>
         <div style={{ flex: 1 }} />
         <button

@@ -61,8 +61,11 @@ export function Submit() {
   const [position, setPosition] = useState('First mortgage');
   const [term, setTerm] = useState('12 months');
   const [rateExp, setRateExp] = useState('8.5–11%');
+  const [occupancy, setOccupancy] = useState('Owner-occupied');
   const [employment, setEmployment] = useState('Self-employed');
   const [beaconBand, setBeaconBand] = useState('680–720');
+  const [income, setIncome] = useState('180,000');
+  const [purpose, setPurpose] = useState('Refinance — consolidation');
   const [flags, setFlags] = useState<string[]>([]);
 
   const toggleFlag = (f: string) =>
@@ -87,6 +90,10 @@ export function Submit() {
     const province = PROVINCE_CODES.includes(rawProvince) ? rawProvince : 'ON';
     const city = parts[parts.length - 2] || parts[0] || '';
     const rate = parseRateRange(rateExp);
+    // The deals table has no occupancy/income/purpose columns, so capture them
+    // in the deal notes (which surface as the lender-facing summary) rather
+    // than dropping the broker's input on the floor.
+    const notes = `Purpose: ${purpose}. Occupancy: ${occupancy}. Employment: ${employment}. Stated income: $${income} CAD.`;
     return {
       // deal_number omitted — dealsService allocates the next number for the broker.
       city,
@@ -106,6 +113,7 @@ export function Submit() {
       rate_max: rate.rate_max,
       requested_rate_range: rateExp,
       exclusion_flags: flags,
+      notes,
     };
   };
 
@@ -240,7 +248,11 @@ export function Submit() {
                 </select>
               </Field>
               <Field label="Occupancy">
-                <select className="select">
+                <select
+                  className="select"
+                  value={occupancy}
+                  onChange={(e) => setOccupancy(e.target.value)}
+                >
                   <option>Owner-occupied</option>
                   <option>Tenant-occupied</option>
                   <option>Vacant</option>
@@ -385,10 +397,18 @@ export function Submit() {
                 </select>
               </Field>
               <Field label="Income (stated, CAD)">
-                <input className="input input-num" defaultValue="180,000" />
+                <input
+                  className="input input-num"
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value)}
+                />
               </Field>
               <Field label="Purpose">
-                <select className="select">
+                <select
+                  className="select"
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                >
                   <option>Refinance — consolidation</option>
                   <option>Purchase</option>
                   <option>Bridge</option>
@@ -542,13 +562,15 @@ export function Submit() {
             <DefList
               items={[
                 ['Property', address],
-                ['Property type', `${propertyType}, owner-occupied`],
+                ['Property type', `${propertyType}, ${occupancy.toLowerCase()}`],
                 ['Loan amount', formatCAD(loanCents) + ' CAD'],
                 ['Position', position],
                 ['LTV', ltv.toFixed(1) + '%'],
                 ['Term', term],
                 ['Rate expectation', rateExp],
+                ['Purpose', purpose],
                 ['Beacon band', beaconBand],
+                ['Stated income', '$' + income + ' CAD'],
                 ['Property flags', flags.length ? flags.join(', ') : 'None'],
                 ['Borrower', anon ? 'Anonymized until lender interest' : 'Revealed on submission'],
                 ['Documents', '3 attached'],

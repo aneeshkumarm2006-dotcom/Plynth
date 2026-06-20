@@ -26,6 +26,25 @@ export interface MatchedDeal {
   beacon_score?: number | null;
   property_type?: string | null;
   is_self_employed?: boolean | null;
+  // The lender's interest signal on this deal — persisted so Interested/Pass
+  // survive a refresh (and drive the pipeline columns).
+  interest_status?: 'interested' | 'passed' | null;
+}
+
+export type InterestStatus = 'interested' | 'passed';
+
+// Mock-mode persistence for the interest signal. Lives in localStorage so the
+// Interested/Pass choice survives a page refresh without a backend. Guarded for
+// non-browser contexts (tests, SSR).
+const INTEREST_KEY = 'plynth:interest';
+function readInterest(dealId: string): InterestStatus | null {
+  if (typeof localStorage === 'undefined') return null;
+  const v = localStorage.getItem(`${INTEREST_KEY}:${dealId}`);
+  return v === 'interested' || v === 'passed' ? v : null;
+}
+function writeInterest(dealId: string, status: InterestStatus): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(`${INTEREST_KEY}:${dealId}`, status);
 }
 
 export const matchedService = {
@@ -52,12 +71,14 @@ export const matchedService = {
         beacon_score: 700,
         property_type: m.asset?.startsWith('Residential') ? 'residential' : 'commercial',
         is_self_employed: true,
+        interest_status: readInterest(m.no),
       }));
     }
     const { data, error } = await supabase
       .from('lender_deal_interactions')
       .select(
         `id, match_score, matched_at, views_count,
+         interest_status,
          deals!inner (
            id, deal_number, city, province, neighbourhood, asset_class,
            loan_amount_cents, ltv, position, term_months, status, notes,
@@ -88,6 +109,7 @@ export const matchedService = {
       beacon_score: row.deals.beacon_score,
       property_type: row.deals.property_type,
       is_self_employed: row.deals.is_self_employed,
+      interest_status: row.interest_status ?? null,
     }));
   },
 
@@ -102,5 +124,21 @@ export const matchedService = {
       p_lender_id: lenderId,
       p_deal_id: dealId,
     });
+  },
+
+  // Persist the lender's Interested/Pass signal on a deal. In mock mode this
+  // writes to localStorage so it survives a refresh; live mode upserts the
+  // interest_status column on the lender_deal_interactions row.
+  async setInterest(lenderId: string, dealId: string, status: InterestStatus): Promise<void> {
+    if (!hasSupabase || !supabase) {
+      writeInterest(dealId, status);
+      return;
+    }
+    await supabase
+      .from('lender_deal_interactions')
+      .upsert(
+        { lender_id: lenderId, deal_id: dealId, interest_status: status },
+        { onConflict: 'lender_id,deal_id' }
+      );
   },
 };

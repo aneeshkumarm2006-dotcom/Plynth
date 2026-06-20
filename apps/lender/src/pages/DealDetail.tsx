@@ -16,10 +16,12 @@ import {
   matchedService,
   offersService,
   criteriaService,
+  fundingsService,
   type MatchedDeal,
   type BuilderState,
   type OfferRow,
   type CounterEntry,
+  type FundingRow,
 } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
 import {
@@ -31,6 +33,7 @@ import {
   titleCase,
   beaconBand,
   whyMatched,
+  fundingToRow,
 } from '../lib/present';
 
 export function DealDetail() {
@@ -45,6 +48,11 @@ export function DealDetail() {
   );
   const { data: criteria } = useAsync<BuilderState | null>(
     () => criteriaService.getForLender(profile?.id ?? ''),
+    [profile?.id]
+  );
+  // The lender's own funded deals, shown as real comparables (section 04).
+  const { data: fundings } = useAsync<FundingRow[]>(
+    () => fundingsService.listForLender(profile?.id ?? ''),
     [profile?.id]
   );
 
@@ -77,6 +85,36 @@ export function DealDetail() {
   // The real deal UUID to attach an offer to (mock mode falls back to the number).
   const offerDealId = deal?.deal_id ?? dealId ?? f.no;
   const factors = whyMatched(deal, criteria ?? null);
+
+  // Interested / Pass signal — seeded from the persisted value once the deal
+  // resolves, then updated optimistically and written through the service.
+  const [interest, setInterest] = useState<'interested' | 'passed' | null>(null);
+  useEffect(() => {
+    if (deal) setInterest(deal.interest_status ?? null);
+  }, [deal]);
+  const act = (next: 'interested' | 'passed') => {
+    setInterest(next);
+    if (profile?.id) void matchedService.setInterest(profile.id, offerDealId, next);
+    toast({ title: next === 'interested' ? 'Marked interested' : 'Passed on this deal' });
+  };
+
+  // Comparable deals = this lender's own recent fundings. Falls back to the
+  // editorial fixture only when they've funded nothing yet.
+  const comparables =
+    fundings && fundings.length
+      ? fundings.slice(0, 4).map((f) => {
+          const r = fundingToRow(f);
+          return { no: r.no, city: r.city, amount: r.amount, mid: r.term, rate: r.rate, closed: r.closed };
+        })
+      : LENDER_MOCK.comparables.map((c) => ({
+          no: c.no,
+          city: c.city,
+          amount: c.amount,
+          mid: c.ltv,
+          rate: c.rate,
+          closed: c.closed,
+        }));
+  const compMidLabel = fundings && fundings.length ? 'Term' : 'LTV';
 
   return (
     <div className="page page-wide">
@@ -120,16 +158,16 @@ export function DealDetail() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => toast({ title: 'Marked interested' })}
+            className={'btn btn-sm ' + (interest === 'interested' ? 'btn-primary' : 'btn-secondary')}
+            onClick={() => act('interested')}
           >
-            Interested
+            {interest === 'interested' ? 'Interested ✓' : 'Interested'}
           </button>
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => toast({ title: 'Passed on this deal' })}
+            onClick={() => act('passed')}
           >
-            Pass
+            {interest === 'passed' ? 'Passed' : 'Pass'}
           </button>
         </div>
       </div>
@@ -215,7 +253,7 @@ export function DealDetail() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Deal', 'Location', 'Amount', 'LTV', 'Rate', 'Closed'].map((h, i) => (
+                  {['Deal', 'Location', 'Amount', compMidLabel, 'Rate', 'Closed'].map((h, i) => (
                     <th
                       key={h}
                       style={{
@@ -234,12 +272,12 @@ export function DealDetail() {
                 </tr>
               </thead>
               <tbody>
-                {LENDER_MOCK.comparables.map((d, i) => (
+                {comparables.map((d, i) => (
                   <tr
                     key={d.no}
                     style={{
                       borderBottom:
-                        i < LENDER_MOCK.comparables.length - 1
+                        i < comparables.length - 1
                           ? '1px solid var(--border)'
                           : 'none',
                     }}
@@ -262,7 +300,7 @@ export function DealDetail() {
                       {d.amount}
                     </td>
                     <td className="num" style={{ padding: '14px 16px', textAlign: 'right' }}>
-                      {d.ltv}
+                      {d.mid}
                     </td>
                     <td
                       className="num"
@@ -412,6 +450,19 @@ function NegotiationPanel({
     }
   };
 
+  const withdraw = async () => {
+    setBusy(true);
+    try {
+      await offersService.reject(myOffer.id);
+      toast({ title: 'Offer withdrawn' });
+      refresh();
+    } catch (err) {
+      toast({ title: 'Could not withdraw', sub: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const sendCounter = async () => {
     setBusy(true);
     try {
@@ -542,6 +593,15 @@ function NegotiationPanel({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Withdraw — available while the offer is still live with the broker. */}
+      {(myOffer.status === 'submitted' || myOffer.status === 'viewed' || myOffer.status === 'countered') && (
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <button className="btn btn-tertiary btn-sm" style={{ paddingLeft: 0, color: '#A85F5F' }} onClick={withdraw} disabled={busy}>
+            Withdraw offer
+          </button>
         </div>
       )}
     </div>

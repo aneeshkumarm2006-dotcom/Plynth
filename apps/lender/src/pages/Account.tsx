@@ -157,7 +157,16 @@ export function Account() {
                 >
                   Change plan
                 </button>
-                <button className="btn btn-tertiary" style={{ color: 'var(--dust)' }}>
+                <button
+                  className="btn btn-tertiary"
+                  style={{ color: 'var(--dust)' }}
+                  onClick={() =>
+                    toast({
+                      title: 'Cancel subscription',
+                      sub: 'Your plan stays active until Jul 1 — contact support to confirm.',
+                    })
+                  }
+                >
                   Cancel subscription
                 </button>
               </div>
@@ -210,7 +219,12 @@ export function Account() {
                     <div className="micro muted-text">Expires 09 / 28</div>
                   </div>
                 </div>
-                <button className="btn btn-ghost btn-sm">Update</button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => toast({ title: 'Update payment method', sub: 'Opens the secure Stripe portal.' })}
+                >
+                  Update
+                </button>
               </div>
               <DefList
                 items={[
@@ -234,7 +248,16 @@ export function Account() {
                   ['Primary contact', 'Eleanor Whitfield'],
                 ]}
               />
-              <button className="btn btn-ghost" style={{ marginTop: 18 }}>
+              <button
+                className="btn btn-ghost"
+                style={{ marginTop: 18 }}
+                onClick={() =>
+                  toast({
+                    title: 'Firm details are verified',
+                    sub: 'Registration and AUM changes go through compliance review.',
+                  })
+                }
+              >
                 Edit firm details
               </button>
             </div>
