@@ -81,7 +81,18 @@ export const offersService = {
     dealId: string,
     lenderId: string
   ): Promise<{ myOffer: OfferRow | null; history: CounterEntry[] }> {
-    if (!hasSupabase || !supabase) return { myOffer: null, history: [] };
+    if (!hasSupabase || !supabase) {
+      // Demo mode: surface a live broker counter on one deal so the
+      // Accept / Counter-back flow is visible; other deals show the composer.
+      const neg = BROKER_MOCK.negotiation;
+      if (dealId === neg.dealId) {
+        return {
+          myOffer: neg.myOffer as unknown as OfferRow,
+          history: neg.history as unknown as CounterEntry[],
+        };
+      }
+      return { myOffer: null, history: [] };
+    }
     const { data: offers, error } = await supabase
       .from('offers')
       .select('*')

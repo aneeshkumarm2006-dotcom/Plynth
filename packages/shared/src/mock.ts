@@ -137,6 +137,48 @@ export const BROKER_MOCK = {
     },
   ],
 
+  // A live lender-side negotiation, so demo mode can show the broker's
+  // counter with the Accept / Counter-back actions (deal mock-0236).
+  // Other deals return no offer and fall back to the blank composer.
+  negotiation: {
+    dealId: 'mock-0236',
+    lenderId: '22222222-2222-2222-2222-222222222222',
+    myOffer: {
+      id: 'mock-offer-0236',
+      deal_id: 'mock-0236',
+      lender_id: '22222222-2222-2222-2222-222222222222',
+      rate_percent: 10.5,
+      lender_fee_percent: 2.5,
+      broker_fee_percent: 1.0,
+      term_months: 12,
+      max_ltv: 80,
+      conditions_text: 'Full appraisal, fire insurance, title',
+      status: 'countered' as const,
+      is_best_offer: false,
+      expires_at: '2026-06-24T00:00:00Z',
+      created_at: '2026-06-11T00:00:00Z',
+      updated_at: '2026-06-12T00:00:00Z',
+    },
+    history: [
+      {
+        initiated_by: 'broker' as const,
+        rate_percent: 9.75,
+        lender_fee_percent: 2.0,
+        broker_fee_percent: 1.0,
+        broker_note: 'Borrower is strong and ready to sign today. Can you meet 9.75% and trim the fee to 2.0%?',
+        created_at: '2026-06-12T00:00:00Z',
+      },
+      {
+        initiated_by: 'lender' as const,
+        rate_percent: 10.5,
+        lender_fee_percent: 2.5,
+        broker_fee_percent: 1.0,
+        broker_note: null,
+        created_at: '2026-06-11T00:00:00Z',
+      },
+    ],
+  },
+
   activity: [
     { t: '3 hours ago', e: 'Lender C submitted an offer at 8.95%.' },
     { t: 'Today, 9:14', e: 'You countered Lender A at 9.0%.' },

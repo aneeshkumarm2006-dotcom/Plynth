@@ -392,7 +392,7 @@ const OFFER_TONE: Record<string, { bg: string; color: string; label: string }> =
   submitted: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Awaiting broker' },
   viewed: { bg: 'var(--slate-bg)', color: 'var(--slate)', label: 'Viewed by broker' },
   countered: { bg: 'var(--wheat-bg)', color: '#A8893F', label: 'Broker countered' },
-  accepted: { bg: 'var(--sage-bg)', color: '#3F6390', label: 'Accepted — funded' },
+  accepted: { bg: 'var(--sage-bg)', color: '#5E7A67', label: 'Accepted — funded' },
   rejected: { bg: 'var(--dust-bg)', color: '#A85F5F', label: 'Declined' },
   expired: { bg: '#F1EFE9', color: 'var(--muted)', label: 'Expired' },
 };
