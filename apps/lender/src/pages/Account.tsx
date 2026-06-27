@@ -5,6 +5,7 @@ import {
   SectionDivider,
   StatBlock,
 } from '@plynth/shared/ui';
+import { privacyService } from '@plynth/supabase/services';
 import { useToastFire } from '../components/ToastContext';
 
 const TABS = [
@@ -12,6 +13,7 @@ const TABS = [
   ['usage', 'Usage'],
   ['payment', 'Payment'],
   ['profile', 'Profile'],
+  ['privacy', 'Privacy'],
 ] as const;
 
 type Tab = (typeof TABS)[number][0];
@@ -22,6 +24,48 @@ export function Account() {
     'Professional'
   );
   const toast = useToastFire();
+
+  const onExportData = async () => {
+    try {
+      const data = await privacyService.exportMyData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'plynth-my-data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Data exported', sub: 'plynth-my-data.json downloaded.' });
+    } catch {
+      toast({
+        title: 'Export failed',
+        sub: 'We could not export your data — please try again.',
+      });
+    }
+  };
+
+  const onRequestDeletion = async () => {
+    if (
+      !window.confirm(
+        'Request deletion of your account? Your data is retained until an admin completes removal.'
+      )
+    )
+      return;
+    try {
+      await privacyService.requestDeletion();
+      toast({
+        title: 'Deletion requested',
+        sub: 'Our team will process it.',
+      });
+    } catch {
+      toast({
+        title: 'Request failed',
+        sub: 'We could not submit your request — please try again.',
+      });
+    }
+  };
 
   return (
     <div className="page" style={{ maxWidth: 920 }}>
@@ -260,6 +304,32 @@ export function Account() {
               >
                 Edit firm details
               </button>
+            </div>
+          )}
+
+          {tab === 'privacy' && (
+            <div className="fade-in">
+              <SectionDivider
+                n="05"
+                label="Privacy & data"
+                meta="Canada PIPEDA"
+              />
+              <p className="body muted-text" style={{ maxWidth: '56ch', marginBottom: 20 }}>
+                Download a copy of your Plynth data, or request deletion of your
+                account (Canada PIPEDA).
+              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-primary" onClick={onExportData}>
+                  Export my data
+                </button>
+                <button
+                  className="btn btn-tertiary"
+                  style={{ color: 'var(--dust)' }}
+                  onClick={onRequestDeletion}
+                >
+                  Request account deletion
+                </button>
+              </div>
             </div>
           )}
         </div>

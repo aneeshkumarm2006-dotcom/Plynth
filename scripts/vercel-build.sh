@@ -19,3 +19,5 @@ cp -r apps/broker/dist dist-vercel/broker
 cp -r apps/lender/dist dist-vercel/lender
 cp -r apps/admin/dist  dist-vercel/admin
 cp public/index.html   dist-vercel/index.html
+cp public/robots.txt   dist-vercel/robots.txt
+cp public/sitemap.xml  dist-vercel/sitemap.xml

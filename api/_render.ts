@@ -1,6 +1,7 @@
-// Pure email-rendering helpers for the notify-email function.
-// Kept separate from index.ts (no Deno/network imports) so they can be
-// unit-tested in isolation with `deno test`.
+// Pure email-rendering helpers for the notify-email Vercel function.
+// No Node/network imports, so they can be unit-tested in isolation
+// (see tests/api/notify-email-render.test.ts). The leading underscore
+// tells Vercel this is a private helper, not a routable function.
 
 export interface NotificationPayload {
   id: string;

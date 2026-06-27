@@ -39,6 +39,7 @@ export function Signup() {
   );
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   // Step 3 — criteria builder — needs the full page width.
   if (step === 2) {
@@ -99,6 +100,10 @@ export function Signup() {
       if (!isValidPassword(form.password))
         return 'Password must be at least 12 characters.';
       if (!form.firm_name) return 'Firm name is required.';
+    }
+    if (step === 3) {
+      if (!agreed)
+        return 'You must agree to the Privacy Policy and Terms to continue.';
     }
     return null;
   };
@@ -337,6 +342,25 @@ export function Signup() {
               </p>
             </div>
           </div>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+              marginTop: 20,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <span className="small" style={{ color: 'var(--slate-deep)' }}>
+              I agree to the Privacy Policy and Terms of Service.
+            </span>
+          </label>
         </div>
       )}
 

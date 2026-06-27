@@ -9,3 +9,4 @@ export * from './lenders';
 export * from './admin';
 export * from './notifications';
 export * from './audit';
+export * from './privacy';

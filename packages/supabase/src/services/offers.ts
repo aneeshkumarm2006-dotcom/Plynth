@@ -203,61 +203,39 @@ export const offersService = {
     return data as OfferRow;
   },
 
+  // Counter, accept, and reject all go through SECURITY DEFINER RPCs
+  // (migration 0016). The server derives `initiated_by`, the
+  // counterparties, and the funding terms from trusted rows and gates
+  // on the caller's identity — the client cannot forge negotiation
+  // history, rewrite a counterparty's offer, or fabricate a funding.
+  // `initiatedBy` is kept in the signature for callers but is ignored
+  // (the server derives it from auth.uid()).
   async counter(
     offerId: string,
-    initiatedBy: 'lender' | 'broker',
+    _initiatedBy: 'lender' | 'broker',
     patch: { rate_percent?: number; lender_fee_percent?: number; broker_fee_percent?: number; broker_note?: string }
   ): Promise<void> {
     if (!hasSupabase || !supabase) return;
-    await supabase.from('offer_history').insert({
-      offer_id: offerId,
-      initiated_by: initiatedBy,
-      ...patch,
+    const { error } = await supabase.rpc('counter_offer', {
+      p_offer_id: offerId,
+      p_rate_percent: patch.rate_percent ?? null,
+      p_lender_fee_percent: patch.lender_fee_percent ?? null,
+      p_broker_fee_percent: patch.broker_fee_percent ?? null,
+      p_broker_note: patch.broker_note ?? null,
     });
-    await supabase
-      .from('offers')
-      .update({ status: 'countered', updated_at: new Date().toISOString() })
-      .eq('id', offerId);
+    if (error) throw error;
   },
 
   async accept(offerId: string): Promise<void> {
     if (!hasSupabase || !supabase) return;
-    const { data: offer } = await supabase
-      .from('offers')
-      .select('*')
-      .eq('id', offerId)
-      .single();
-    if (!offer) return;
-    const { data: deal } = await supabase
-      .from('deals')
-      .select('broker_id')
-      .eq('id', offer.deal_id)
-      .single();
-    await supabase
-      .from('offers')
-      .update({ status: 'accepted', is_best_offer: true })
-      .eq('id', offerId);
-    await supabase
-      .from('deals')
-      .update({ status: 'funded' })
-      .eq('id', offer.deal_id);
-    if (deal) {
-      await supabase.from('fundings').insert({
-        deal_id: offer.deal_id,
-        offer_id: offer.id,
-        broker_id: deal.broker_id,
-        lender_id: offer.lender_id,
-        actual_rate_percent: offer.rate_percent,
-        actual_fee_percent: offer.lender_fee_percent,
-        actual_term_months: offer.term_months,
-        closed_at: new Date().toISOString(),
-      });
-    }
+    const { error } = await supabase.rpc('accept_offer', { p_offer_id: offerId });
+    if (error) throw error;
   },
 
   async reject(offerId: string): Promise<void> {
     if (!hasSupabase || !supabase) return;
-    await supabase.from('offers').update({ status: 'rejected' }).eq('id', offerId);
+    const { error } = await supabase.rpc('reject_offer', { p_offer_id: offerId });
+    if (error) throw error;
   },
 
   // Activity timeline for a deal, synthesized from its offers + counter history.

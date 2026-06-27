@@ -18,6 +18,7 @@ export function Signup() {
   const [step, setStep] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [form, setForm] = useState<BrokerSignupPayload>({
     email: '',
     password: '',
@@ -43,6 +44,8 @@ export function Signup() {
     }
     if (step === 2) {
       if (!form.first_name || !form.last_name) return 'Full name is required.';
+      if (!agreed)
+        return 'You must agree to the Privacy Policy and Terms to continue.';
     }
     return null;
   };
@@ -179,6 +182,28 @@ export function Signup() {
             </Field>
           </div>
         </div>
+      )}
+
+      {step === 2 && (
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            marginTop: 20,
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            style={{ marginTop: 2 }}
+          />
+          <span className="small" style={{ color: 'var(--slate-deep)' }}>
+            I agree to the Privacy Policy and Terms of Service.
+          </span>
+        </label>
       )}
 
       {err && (

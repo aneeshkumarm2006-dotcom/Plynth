@@ -42,6 +42,21 @@ for design review without a database.
    required** after changing them.
 3. Deploy. Verify `/broker` and `/lender` both load and that sign-in works.
 
+### Email notifications (`/api/notify-email`) — server-side env (NOT `VITE_`)
+
+Set these on the Vercel project (server-side only; never bundled to the browser):
+   - `RESEND_API_KEY` — Resend API key (`re_...`)
+   - `EMAIL_FROM` — verified sender, e.g. `Plynth <notifications@plynth.com>`
+   - `EMAIL_WEBHOOK_SECRET` — shared secret; also passed to `admin_set_email_config()`
+   - `SUPABASE_URL` — project URL (recommended)
+   - `SUPABASE_SERVICE_ROLE_KEY` — service-role key (recommended)
+
+   **Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.** When present, the function
+   re-fetches the recipient + content from the database by notification id and
+   ignores the request body — so a leaked `EMAIL_WEBHOOK_SECRET` can't be used to
+   send arbitrary phishing from your verified domain. Without them it falls back to
+   trusting the request body (strictly less secure).
+
 ## 4. Custom domains (brokers.plynth.ca / lenders.plynth.ca)
 
 The current `vercel.json` serves both portals under path prefixes on one domain.

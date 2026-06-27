@@ -134,11 +134,14 @@ export const matchedService = {
       writeInterest(dealId, status);
       return;
     }
-    await supabase
-      .from('lender_deal_interactions')
-      .upsert(
-        { lender_id: lenderId, deal_id: dealId, interest_status: status },
-        { onConflict: 'lender_id,deal_id' }
-      );
+    // Goes through a SECURITY DEFINER RPC (migration 0016) scoped to the
+    // caller's own match row. Lenders can no longer self-insert
+    // interaction rows for arbitrary deals or spoof match_score /
+    // borrower_details_revealed via a direct upsert.
+    const { error } = await supabase.rpc('set_interest', {
+      p_deal_id: dealId,
+      p_status: status,
+    });
+    if (error) throw error;
   },
 };

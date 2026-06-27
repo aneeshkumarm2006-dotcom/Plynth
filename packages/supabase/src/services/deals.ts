@@ -143,6 +143,14 @@ export const dealsService = {
         updated_at: new Date().toISOString(),
       } as DealRow;
     }
+    // Borrower-identifying fields live in the separate, reveal-gated
+    // deal_private table (migration 0017) — never on `deals`, which
+    // matched lenders can read. Split them out of the deal insert.
+    const { borrower_name, property_address, ...dealCols } = rest as typeof rest & {
+      borrower_name?: string;
+      property_address?: string;
+    };
+
     // Allocate the number and insert. If two submits race onto the same number
     // (unique violation 23505) and the caller didn't pin one, re-allocate and retry.
     let lastErr: unknown;
@@ -153,13 +161,25 @@ export const dealsService = {
         .insert({
           broker_id: brokerId,
           deal_number,
-          ...rest,
+          ...dealCols,
           status,
           submitted_at: status === 'active' ? new Date().toISOString() : null,
         })
         .select('*')
         .single();
-      if (!error) return data as DealRow;
+      if (!error) {
+        if (borrower_name || property_address) {
+          const { error: pErr } = await supabase
+            .from('deal_private')
+            .insert({
+              deal_id: (data as DealRow).id,
+              borrower_name: borrower_name ?? null,
+              property_address: property_address ?? null,
+            });
+          if (pErr) throw pErr;
+        }
+        return data as DealRow;
+      }
       if ((error as { code?: string }).code === '23505' && !provided) {
         lastErr = error;
         continue;
@@ -174,14 +194,47 @@ export const dealsService = {
       // Mock mode: no persistence — echo the patch so callers can refresh.
       return { id, ...patch, updated_at: new Date().toISOString() } as unknown as DealRow;
     }
+    // Route borrower-identity edits to the reveal-gated deal_private table.
+    const { borrower_name, property_address, ...dealPatch } = patch;
+    if (borrower_name !== undefined || property_address !== undefined) {
+      const { error: pErr } = await supabase
+        .from('deal_private')
+        .upsert(
+          {
+            deal_id: id,
+            ...(borrower_name !== undefined ? { borrower_name } : {}),
+            ...(property_address !== undefined ? { property_address } : {}),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'deal_id' }
+        );
+      if (pErr) throw pErr;
+    }
     const { data, error } = await supabase
       .from('deals')
-      .update({ ...patch, updated_at: new Date().toISOString() })
+      .update({ ...dealPatch, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select('*')
       .single();
     if (error) throw error;
     return data as DealRow;
+  },
+
+  // Borrower identity (name + property address) from the reveal-gated
+  // deal_private table. RLS (migration 0017) returns a row only to the
+  // deal's broker, an admin, or a lender the broker has revealed to —
+  // everyone else gets null.
+  async getBorrowerDetails(
+    dealId: string
+  ): Promise<{ borrower_name: string | null; property_address: string | null } | null> {
+    if (!hasSupabase || !supabase) return null;
+    const { data, error } = await supabase
+      .from('deal_private')
+      .select('borrower_name, property_address')
+      .eq('deal_id', dealId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as { borrower_name: string | null; property_address: string | null }) ?? null;
   },
 
   // Promote a draft to the live marketplace.
@@ -194,18 +247,17 @@ export const dealsService = {
     if (error) throw error;
   },
 
+  // Reveal borrower identity to specific lenders. Goes through a
+  // SECURITY DEFINER RPC (migration 0016) that verifies the caller is
+  // the deal's broker and appends to the reveal list atomically — the
+  // old read-modify-write here had a TOCTOU race that could drop a
+  // lender from the list under concurrent reveals.
   async revealBorrowerTo(dealId: string, lenderIds: string[]): Promise<void> {
     if (!hasSupabase || !supabase) return;
-    const { data: deal } = await supabase
-      .from('deals')
-      .select('borrower_details_revealed_to')
-      .eq('id', dealId)
-      .single();
-    const existing = (deal?.borrower_details_revealed_to as string[]) ?? [];
-    const next = Array.from(new Set([...existing, ...lenderIds]));
-    await supabase
-      .from('deals')
-      .update({ borrower_details_revealed_to: next })
-      .eq('id', dealId);
+    const { error } = await supabase.rpc('reveal_borrower_to', {
+      p_deal_id: dealId,
+      p_lender_ids: lenderIds,
+    });
+    if (error) throw error;
   },
 };

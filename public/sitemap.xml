@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Plynth sitemap.
+  Only list public pages that return 200 — listing not-yet-built pages
+  hurts you in Search Console. Add new <url> blocks as you ship the
+  marketing pages (for-brokers, for-lenders, pricing, blog posts…).
+
+  NOTE: update the domain below if the production domain changes.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://plynth.com/</loc>
+    <lastmod>2026-06-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Add as you build them, e.g.:
+  <url>
+    <loc>https://plynth.com/for-brokers</loc>
+    <lastmod>2026-06-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://plynth.com/for-lenders</loc>
+    <lastmod>2026-06-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  -->
+</urlset>

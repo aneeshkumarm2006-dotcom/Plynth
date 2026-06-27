@@ -33,26 +33,27 @@ export const lendersService = {
     if (!hasSupabase || !supabase) {
       return BROKER_MOCK.lenders.map((l, i) => ({ id: 'mock-lender-' + i, ...l }));
     }
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select(
-        `id, firm_name, lender_type,
-         lender_criteria ( asset_classes, provinces, ltv_max_first_position, loan_min_cents, loan_max_cents, close_speed_days_min, close_speed_days_max )`
-      )
-      .eq('role', 'lender');
+    // Served through the column-whitelisted lender_directory() RPC
+    // (migration 0017). The old direct SELECT on user_profiles was
+    // backed by a cross-role policy that also exposed every lender's
+    // email + FSRA license number to any broker; that policy is gone.
+    const { data, error } = await supabase.rpc('lender_directory');
     if (error) throw error;
-    return (data ?? []).map((row: any) => {
-      const c = Array.isArray(row.lender_criteria) ? row.lender_criteria[0] : row.lender_criteria;
-      return {
-        id: row.id,
-        name: row.firm_name ?? 'Lender',
-        type: LENDER_TYPE_LABELS[row.lender_type] ?? row.lender_type ?? '',
-        region: c?.provinces?.join(' · ') ?? '—',
-        assets: c?.asset_classes?.join(', ') ?? '—',
-        ltv: c ? `Up to ${c.ltv_max_first_position}%` : '—',
-        size: c ? `${moneyShort(c.loan_min_cents)} – ${moneyShort(c.loan_max_cents)}` : '—',
-        speed: c ? `${c.close_speed_days_min}–${c.close_speed_days_max} days` : '—',
-      };
-    });
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      name: row.firm_name ?? 'Lender',
+      type: LENDER_TYPE_LABELS[row.lender_type] ?? row.lender_type ?? '',
+      region: row.provinces?.join(' · ') ?? '—',
+      assets: row.asset_classes?.join(', ') ?? '—',
+      ltv: row.ltv_max_first_position != null ? `Up to ${row.ltv_max_first_position}%` : '—',
+      size:
+        row.loan_min_cents != null && row.loan_max_cents != null
+          ? `${moneyShort(row.loan_min_cents)} – ${moneyShort(row.loan_max_cents)}`
+          : '—',
+      speed:
+        row.close_speed_days_min != null
+          ? `${row.close_speed_days_min}–${row.close_speed_days_max} days`
+          : '—',
+    }));
   },
 };

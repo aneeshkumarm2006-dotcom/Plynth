@@ -1,0 +1,19 @@
+# Plynth — robots.txt
+# ------------------------------------------------------------------
+# Marketing/public pages are open to crawlers. The three product
+# portals are gated apps (login + JS-rendered) with no SEO value, so
+# they are blocked from indexing.
+#
+# NOTE: update the Sitemap URL below if the production domain changes.
+# ------------------------------------------------------------------
+
+User-agent: *
+Allow: /
+
+# Gated product portals — do not index (trailing slash so future
+# marketing pages like /for-brokers are NOT accidentally blocked).
+Disallow: /broker/
+Disallow: /lender/
+Disallow: /admin/
+
+Sitemap: https://plynth.com/sitemap.xml

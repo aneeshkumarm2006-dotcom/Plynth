@@ -11,6 +11,11 @@ import { supabase, hasSupabase } from './client';
 
 export type UserRole = 'broker' | 'lender' | 'admin';
 
+// Privacy-policy / terms version the user agrees to at signup. Bump this
+// when the policy materially changes so re-consent can be required.
+// Stamped onto user_profiles.consent_version / consented_at (migration 0017).
+export const CONSENT_VERSION = '2026-06-27';
+
 export interface UserProfile {
   id: string;
   role: UserRole;
@@ -211,6 +216,8 @@ export function AuthProvider({ children, portalRole }: AuthProviderProps) {
         fsra_license_number: payload.fsra_license_number,
         first_name: payload.first_name,
         last_name: payload.last_name,
+        consent_version: CONSENT_VERSION,
+        consented_at: new Date().toISOString(),
       });
       if (insertErr) return { error: insertErr.message, user: data.user };
     }
@@ -247,6 +254,8 @@ export function AuthProvider({ children, portalRole }: AuthProviderProps) {
         firm_name: payload.firm_name,
         lender_type: payload.lender_type,
         tier: payload.tier ?? 'professional',
+        consent_version: CONSENT_VERSION,
+        consented_at: new Date().toISOString(),
       });
       if (insertErr) return { error: insertErr.message, user: data.user };
     }

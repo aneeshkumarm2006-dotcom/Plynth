@@ -8,7 +8,11 @@ import {
 } from '@plynth/shared/ui';
 import { BROKER_MOCK } from '@plynth/shared/mock';
 import { formatDateTime } from '@plynth/shared/utils';
-import { auditService, type AuditLogRow } from '@plynth/supabase/services';
+import {
+  auditService,
+  privacyService,
+  type AuditLogRow,
+} from '@plynth/supabase/services';
 import { useAuth } from '@plynth/supabase/auth';
 import { useToastFire } from '../components/ToastContext';
 
@@ -18,6 +22,7 @@ const TABS = [
   ['notifications', 'Notifications'],
   ['activity', 'Activity log'],
   ['billing', 'Billing'],
+  ['privacy', 'Privacy & data'],
 ] as const;
 
 type Tab = (typeof TABS)[number][0];
@@ -98,6 +103,48 @@ export function Settings() {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Activity log exported', sub: `${activity.length} entries.` });
+  };
+
+  const onExportData = async () => {
+    try {
+      const data = await privacyService.exportMyData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'plynth-my-data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Data exported', sub: 'plynth-my-data.json downloaded.' });
+    } catch {
+      toast({
+        title: 'Export failed',
+        sub: 'We could not export your data — please try again.',
+      });
+    }
+  };
+
+  const onRequestDeletion = async () => {
+    if (
+      !window.confirm(
+        'Request deletion of your account? Your data is retained until an admin completes removal.'
+      )
+    )
+      return;
+    try {
+      await privacyService.requestDeletion();
+      toast({
+        title: 'Deletion requested',
+        sub: 'Our team will process it.',
+      });
+    } catch {
+      toast({
+        title: 'Request failed',
+        sub: 'We could not submit your request — please try again.',
+      });
+    }
   };
 
   return (
@@ -338,6 +385,32 @@ export function Settings() {
                   ['Fees invoiced YTD', '$96,500 CAD'],
                 ]}
               />
+            </div>
+          )}
+
+          {tab === 'privacy' && (
+            <div className="fade-in">
+              <SectionDivider
+                n="06"
+                label="Privacy & data"
+                meta="Canada PIPEDA"
+              />
+              <p className="small muted-text" style={{ maxWidth: '52ch', marginBottom: 20 }}>
+                Download a copy of your Plynth data, or request deletion of your
+                account (Canada PIPEDA).
+              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-primary" onClick={onExportData}>
+                  Export my data
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ color: 'var(--dust)' }}
+                  onClick={onRequestDeletion}
+                >
+                  Request account deletion
+                </button>
+              </div>
             </div>
           )}
         </div>

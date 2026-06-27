@@ -11,11 +11,15 @@
 --   notifications INSERT
 --     -> trg_notification_send_email()  (SECURITY DEFINER)
 --        - resolves recipient email + display name + opt-out
---        - POSTs the payload to the `notify-email` Edge Function
+--        - POSTs the payload to the /api/notify-email Vercel function
 --          via pg_net (fire-and-forget, never blocks the insert)
---     -> Edge Function validates a shared secret and calls Resend
+--     -> the Vercel function validates a shared secret and calls Resend
 --
--- SAFE BEFORE CONFIGURED: if the Edge Function URL is not set in
+-- The Resend key lives in Vercel's env (server-side, never bundled to
+-- the browser). The DB only stores the function URL + the shared
+-- webhook secret in private.email_config.
+--
+-- SAFE BEFORE CONFIGURED: if the function URL is not set in
 -- `private.email_config`, the trigger is a no-op. So this migration
 -- can be applied now and "switched on" later once the Resend key +
 -- function URL exist — without any code change.
@@ -44,7 +48,7 @@ CREATE SCHEMA IF NOT EXISTS private;
 
 CREATE TABLE IF NOT EXISTS private.email_config (
   id            INT PRIMARY KEY DEFAULT 1,
-  function_url  TEXT,          -- e.g. https://<ref>.supabase.co/functions/v1/notify-email
+  function_url  TEXT,          -- e.g. https://<your-app>.vercel.app/api/notify-email
   webhook_secret TEXT,         -- shared bearer secret the function checks
   CONSTRAINT email_config_singleton CHECK (id = 1)
 );
@@ -139,10 +143,10 @@ CREATE TRIGGER notifications_send_email
 
 -- ============================================================
 -- 4. Admin-gated helper to set the config without hand-writing SQL.
---    Call once after deploying the Edge Function:
+--    Call once after deploying the Vercel function:
 --      SELECT admin_set_email_config(
---        'https://<ref>.supabase.co/functions/v1/notify-email',
---        '<the same secret you set as EMAIL_WEBHOOK_SECRET on the function>'
+--        'https://<your-app>.vercel.app/api/notify-email',
+--        '<the same secret you set as EMAIL_WEBHOOK_SECRET in Vercel>'
 --      );
 -- ============================================================
 CREATE OR REPLACE FUNCTION admin_set_email_config(p_url TEXT, p_secret TEXT)
