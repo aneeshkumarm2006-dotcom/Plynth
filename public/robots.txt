@@ -22,4 +22,4 @@ Disallow: /seoteam/
 # The public blog IS meant to be indexed (served server-rendered by
 # api/blog/*), so it is intentionally left crawlable.
 
-Sitemap: https://plynth.com/sitemap.xml
+Sitemap: https://plynth-broker.vercel.app/sitemap.xml
