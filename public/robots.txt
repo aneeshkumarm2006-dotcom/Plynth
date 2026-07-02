@@ -16,4 +16,10 @@ Disallow: /broker/
 Disallow: /lender/
 Disallow: /admin/
 
+# Private SEO publishing dashboard — never index.
+Disallow: /seoteam/
+
+# The public blog IS meant to be indexed (served server-rendered by
+# api/blog/*), so it is intentionally left crawlable.
+
 Sitemap: https://plynth.com/sitemap.xml

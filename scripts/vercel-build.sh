@@ -15,9 +15,13 @@ pnpm -r build
 
 rm -rf dist-vercel
 mkdir -p dist-vercel
-cp -r apps/broker/dist dist-vercel/broker
-cp -r apps/lender/dist dist-vercel/lender
-cp -r apps/admin/dist  dist-vercel/admin
+cp -r apps/broker/dist  dist-vercel/broker
+cp -r apps/lender/dist  dist-vercel/lender
+cp -r apps/admin/dist   dist-vercel/admin
+cp -r apps/seoteam/dist dist-vercel/seoteam
 cp public/index.html   dist-vercel/index.html
 cp public/robots.txt   dist-vercel/robots.txt
-cp public/sitemap.xml  dist-vercel/sitemap.xml
+# NOTE: sitemap.xml is no longer a static file — it is served dynamically by
+# api/sitemap.ts (rewritten from /sitemap.xml in vercel.json) so newly published
+# blog posts appear without a redeploy. A physical dist-vercel/sitemap.xml would
+# shadow that rewrite, so do NOT copy public/sitemap.xml here.

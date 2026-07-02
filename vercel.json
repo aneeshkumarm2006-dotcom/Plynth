@@ -6,11 +6,15 @@
   "rewrites": [
     { "source": "/broker/:path*", "destination": "/broker/index.html" },
     { "source": "/lender/:path*", "destination": "/lender/index.html" },
-    { "source": "/admin/:path*", "destination": "/admin/index.html" }
+    { "source": "/admin/:path*", "destination": "/admin/index.html" },
+    { "source": "/seoteam/:path*", "destination": "/seoteam/index.html" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/blog", "destination": "/api/blog" },
+    { "source": "/blog/:slug", "destination": "/api/blog/post?slug=:slug" }
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!blog(?:/|$)).*)",
       "headers": [
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "X-Frame-Options", "value": "DENY" },
